@@ -7,7 +7,8 @@
 3. Create a prompt to triage issues:
 
    ```sh
-   dart run bin/flutter_triage_tools.dart "is:open is:issue label:team-text-input,fyi-text-input no:assignee -label:triaged-text-input" > prompt.md
+   query="is:open is:issue label:team-text-input,fyi-text-input no:assignee -label:triaged-text-input"
+   dart run bin/create_summarize_issues_prompt.dart "$query" > prompt.md
    ```
 
 4. Run Gemini:

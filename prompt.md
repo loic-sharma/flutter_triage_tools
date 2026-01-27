@@ -1,5 +1,5 @@
 <instructions>
-Summarize each of the following GitHub issues in 1-3 sentences.
+Summarize each of the following GitHub issues.
 
 Suggest a title for each, in sentence case. If the issue is specific to a
 platform, prefix the title with the platform name, e.g. "[Android]" or "[iOS]".
@@ -12,7 +12,9 @@ platform, prefix the title with the platform name, e.g. "[Android]" or "[iOS]".
 **Issue ID**: [flutter#123](https://github.com/flutter/flutter/issues/123)
 
 **Summary**: When Backspace is pressed on a virtual keyboard of certain Samsung
-devices, the keypress is not sent to the TextField.
+devices, the keypress is not sent to the TextField. This appears to be a bug in
+`_HighlightModeManager`: it assumes all `KeyMessage`s are physical key presses,
+however, Android's backspace virtual key can send a `KeyMessage`.
 
 </example_output>
 
@@ -22,18 +24,15 @@ devices, the keypress is not sent to the TextField.
     <body>
 ### Steps to reproduce
 
-Right-clicking within a nested SelectionArea area may sometimes pop up the
-ContextMenu of the parent Selection.
+Right-clicking within a nested SelectionArea area may sometimes pop up the ContextMenu of the parent Selection.
 
 ### Expected results
 
-Right-clicking within a nested SelectionArea area always pop up the ContextMenu
-of current SelectionArea.
+Right-clicking within a nested SelectionArea area always pop up the ContextMenu of current SelectionArea.
 
 ### Actual results
 
-Right-clicking within a nested SelectionArea area may sometimes pop up the
-ContextMenu of the parent Selection.
+Right-clicking within a nested SelectionArea area may sometimes pop up the ContextMenu of the parent Selection.
 
 ### Code sample
 
@@ -91,6 +90,7 @@ class HomeScreen extends StatelessWidget {
 
 </details>
 
+
 ### Screenshots or Video
 
 <details open>
@@ -99,6 +99,7 @@ class HomeScreen extends StatelessWidget {
 ![Image](https://github.com/user-attachments/assets/10def7ed-9eb8-4f47-b55d-b8038ca1a8a0)
 
 </details>
+
 
 ### Logs
 
@@ -109,6 +110,7 @@ class HomeScreen extends StatelessWidget {
 ```
 
 </details>
+
 
 ### Flutter Doctor output
 
@@ -163,12 +165,12 @@ class HomeScreen extends StatelessWidget {
 
     </body>
     <comments>
-
-## author:	YaolongChen association:	none edited:	false status:	none
-
-Incidentally, even wrapping the nested `SelectionArea` with
-`SelectionContainer.disabled` didn't help.
-
+author:	YaolongChen
+association:	none
+edited:	false
+status:	none
+--
+Incidentally, even wrapping the nested `SelectionArea` with `SelectionContainer.disabled` didn't help.
 ```dart
 import 'package:flutter/material.dart';
 
@@ -219,33 +221,40 @@ class HomeScreen extends StatelessWidget {
     );
   }
 }
+
 ```
 
-## ![Image](https://github.com/user-attachments/assets/f0f0d3ff-c898-4b7f-8599-eabaa3162323)
-
-## author:	tirth-patel-nc association:	member edited:	false status:	none
-
+![Image](https://github.com/user-attachments/assets/f0f0d3ff-c898-4b7f-8599-eabaa3162323)
+--
+author:	tirth-patel-nc
+association:	member
+edited:	false
+status:	none
+--
 Thanks for the report. Seeing the same behaviour with latest SDK versions.
 
 ```
 stable : 3.38.7
 master : 3.41.0-1.0.pre-187
 ```
-
-## -- author:	flutter-triage-bot association:	none edited:	false status:	none
-
-## The `fyi-text-input` label is redundant with the `team-text-input` label. The `triaged-design` label is irrelevant if there is no `team-design` label or `fyi-design` label.
+--
+author:	flutter-triage-bot
+association:	none
+edited:	false
+status:	none
+--
+The `fyi-text-input` label is redundant with the `team-text-input` label.
+The `triaged-design` label is irrelevant if there is no `team-design` label or `fyi-design` label.
+--
 
     </comments>
-
-</issue>
+  </issue>
   <issue id="180484">
     <title>[Android] `MediaQuery.viewInsetOf(context).bottom` discontinuity when opening the keyboard</title>
     <body>
 ### Steps to reproduce
 
-- Create an app and align a fixed height container to the bottom of the safe
-  area and add a textfield
+- Create an app and align a fixed height container to the bottom of the safe area and add a textfield
 - Run the app and tap into the text field
 - Notice that as the keyboard opens there's a jump at the end of the animation
 
@@ -307,6 +316,7 @@ class MainScreen extends StatelessWidget {
     );
   }
 }
+
 ```
 
 </details>
@@ -381,9 +391,11 @@ fun MainScreen(modifier: Modifier = Modifier) {
         )
     }
 }
+
 ```
 
 </details>
+
 
 ### Screenshots or Video
 
@@ -398,15 +410,11 @@ https://github.com/user-attachments/assets/d678f871-8b9f-46b0-9f2f-f4d1e9828260
 
 ### Details
 
-I've attached two implementations (Flutter, Native) and two video captures to
-compare on the same device.
-
+I've attached two implementations (Flutter, Native) and two video captures to compare on the same device.
 - The Android implementation has no jump
 - The Flutter implementation has a jump the end of the animation
 
-I've also logged `MediaQuery.viewInsetOf(context).bottom` and the values look
-like this:
-
+I've also logged `MediaQuery.viewInsetOf(context).bottom` and the values look like this:
 ```
 I/flutter (32244): Bottom inset: 46.857142857142854
 I/flutter (32244): Bottom inset: 194.28571428571428
@@ -418,14 +426,15 @@ I/flutter (32244): Bottom inset: 299.42857142857144
 I/ImeTracker(32244): com.example.text_example:8f09955a: onShown
 I/flutter (32244): Bottom inset: 324.1904761904762
 ```
+Notice that after `288.0`, `296.0`, a jump occurs to `324.1904761904762`.
+The 24 point jump also seems to be highly related to the height of the home indicator visible on the bottom when the keyboard is closed.
 
-Notice that after `288.0`, `296.0`, a jump occurs to `324.1904761904762`. The 24
-point jump also seems to be highly related to the height of the home indicator
-visible on the bottom when the keyboard is closed.
 
 ### System
+Nothing OS 3.2
+Nothing Phone 1
+Android version 15
 
-Nothing OS 3.2 Nothing Phone 1 Android version 15
 
 ### Flutter Doctor output
 
@@ -472,90 +481,96 @@ Nothing OS 3.2 Nothing Phone 1 Android version 15
 
     </body>
     <comments>
-
-## author:	PurplePolyhedron association:	contributor edited:	true status:	none
-
-## Have you tried the code in profile or release mode? I have experienced lag when opening the keyboard in Android debug mode.
-
-## author:	intonarumori association:	none edited:	false status:	none
-
-## Yes, I tested in release mode and it's the same result, pretty noticeable. The native version is smooth as butter.
-
-## author:	tirth-patel-nc association:	member edited:	false status:	none
-
-## thanks for the report. Appears to be a duplicate of #19480 #167374 #116836. If you disagree write in comments and I'll reopen the issue.
-
-## author:	intonarumori association:	none edited:	false status:	none
-
-## I've looked at those issues, I think they are related, but not duplicates.
-
-## author:	intonarumori association:	none edited:	false status:	none
-
-## @tirth-patel-nc This issue is related to the ones you posted, but not a straight duplicate, please reopen.
-
-## author:	tirth-patel-nc association:	member edited:	false status:	none
-
+author:	PurplePolyhedron
+association:	contributor
+edited:	true
+status:	none
+--
+Have you tried the code in profile or release mode? I have experienced lag when opening the keyboard in Android debug mode.
+--
+author:	intonarumori
+association:	none
+edited:	false
+status:	none
+--
+Yes, I tested in release mode and it's the same result, pretty noticeable. The native version is smooth as butter.
+--
+author:	tirth-patel-nc
+association:	member
+edited:	false
+status:	none
+--
+thanks for the report. Appears to be a duplicate of #19480 #167374 #116836. If you disagree write in comments and I'll reopen the issue.
+--
+author:	intonarumori
+association:	none
+edited:	false
+status:	none
+--
+I've looked at those issues, I think they are related, but not duplicates.
+--
+author:	intonarumori
+association:	none
+edited:	false
+status:	none
+--
+@tirth-patel-nc This issue is related to the ones you posted, but not a straight duplicate, please reopen.
+--
+author:	tirth-patel-nc
+association:	member
+edited:	false
+status:	none
+--
 Thanks for the report. Seeing the same behaviour with latest SDK versions.
 
 ```
 stable : 3.38.6
 master : 3.40.0-1.0.pre-494
 ```
+--
+author:	HE-LU
+association:	none
+edited:	false
+status:	none
+--
+@intonarumori I can confirm that I’m seeing the same issue on my end. I tested both the stable release (3.38.6) and master, and the behavior is consistent.
 
-## -- author:	HE-LU association:	none edited:	false status:	none
+I also noticed an additional, less obvious behavior. As shown in your video, when the keyboard opens, the red bar becomes slightly cropped. I can reproduce this as well.
 
-@intonarumori I can confirm that I’m seeing the same issue on my end. I tested
-both the stable release (3.38.6) and master, and the behavior is consistent.
+Additionally, when this happens very quickly—for example, when unfocusing on click and rapidly focusing/unfocusing the input, causing the software keyboard to open and close in quick succession—the behavior changes slightly. Instead of cropping the red bar, an empty space is added below it, shifting the entire bar slightly upward above the keyboard. This then settles once the keyboard is fully visible.
 
-I also noticed an additional, less obvious behavior. As shown in your video,
-when the keyboard opens, the red bar becomes slightly cropped. I can reproduce
-this as well.
+Could you please check whether you observe the same behavior during rapid keyboard show/hide cycles?
+--
+author:	loic-sharma
+association:	member
+edited:	true
+status:	none
+--
+@intonarumori Could you expand on how this issue is different than https://github.com/flutter/flutter/issues/116836?
 
-Additionally, when this happens very quickly—for example, when unfocusing on
-click and rapidly focusing/unfocusing the input, causing the software keyboard
-to open and close in quick succession—the behavior changes slightly. Instead of
-cropping the red bar, an empty space is added below it, shifting the entire bar
-slightly upward above the keyboard. This then settles once the keyboard is fully
-visible.
-
-## Could you please check whether you observe the same behavior during rapid keyboard show/hide cycles?
-
-## author:	loic-sharma association:	member edited:	true status:	none
-
-@intonarumori Could you expand on how this issue is different than
-https://github.com/flutter/flutter/issues/116836?
-
-## It looks like these issues have similar root causes, I suspect we should mark this one as a duplicate and copy your findings to that issue.
+It looks like these issues have similar root causes, I suspect we should mark this one as a duplicate and copy your findings to that issue.
+--
 
     </comments>
-
-</issue>
+  </issue>
   <issue id="180435">
     <title>Action.overridable cannot be overridden by a DoNothingAction</title>
     <body>
 ### Steps to reproduce
 
-1. Wrap a `TextField` with `Actions` and use `DoNothingAction` for all text
-   editing `Intent`s (see code sample)
+1. Wrap a `TextField` with `Actions` and use `DoNothingAction` for all text editing `Intent`s (see code sample)
 2. Run it, type in some text.
-3. Do some text editing related shortcuts like `arrow left`, `arrow up`,
-   `ctrl + A`, `backspace` etc.
+3. Do  some text editing related shortcuts like `arrow left`, `arrow up`, `ctrl + A`, `backspace` etc.
 
 ### Expected results
 
-1. `arrow up`, `arrow down`, `page up`, `page down`, `home` and `end` or in
-   other words `ExtendSelectionVerticallyToAdjacentPageIntent` and
-   `ExtendSelectionVerticallyToAdjacentLineIntent` do nothing
+1. `arrow up`, `arrow down`, `page up`, `page down`, `home` and `end` or in other words `ExtendSelectionVerticallyToAdjacentPageIntent` and `ExtendSelectionVerticallyToAdjacentLineIntent` do nothing
 2. for all other intents no assertion errors is thrown
 
 ### Actual results
 
-1. `ExtendSelectionVerticallyToAdjacentPageIntent` and
-   `ExtendSelectionVerticallyToAdjacentLineIntent` moves caret to the start/end
-   of the text
-2. When all other intents are executed, the following assertion error is thrown
-   (example for `SelectAllTextIntent`):
-
+1. `ExtendSelectionVerticallyToAdjacentPageIntent` and `ExtendSelectionVerticallyToAdjacentLineIntent` moves caret to the start/end of the text
+2. When all other intents are executed, the following assertion error is thrown (example for `SelectAllTextIntent`):
 ```dart
 ════════ Exception caught by services library ══════════════════════════════════
 The following assertion was thrown while processing the key message handler:
@@ -657,6 +672,7 @@ class MyApp extends StatelessWidget {
 
 </details>
 
+
 ### Screenshots or Video
 
 _No response_
@@ -721,12 +737,13 @@ _No response_
 
     </body>
     <comments>
-
-## author:	PurplePolyhedron association:	contributor edited:	true status:	none
-
-It seems that `DoNothingAction` couldn't actually bind to any `Intent` in this
-case, despite the document saying it should be able to. A possible workaround is
-to create your own `Intent` specific `DoNothingAction`.
+author:	PurplePolyhedron
+association:	contributor
+edited:	true
+status:	none
+--
+It seems that `DoNothingAction` couldn't actually bind to any `Intent` in this case, despite the document saying it should be able to.
+A possible workaround is to create your own `Intent` specific `DoNothingAction`.
 
 ```dart
 import 'package:flutter/material.dart';
@@ -780,20 +797,24 @@ class ActionApp extends StatelessWidget {
 }
 ```
 
-## -- author:	lebeshev association:	none edited:	false status:	none
-
+--
+author:	lebeshev
+association:	none
+edited:	false
+status:	none
+--
 > A possible workaround is to create your own Intent specific DoNothingAction.
 
-## Yes, that naturally fixes assertion errors. This does not fix `ExtendSelectionVerticallyToAdjacentLineIntent` and `ExtendSelectionVerticallyToAdjacentPageIntent` still running their default actions however.
-
-## author:	lebeshev association:	none edited:	false status:	none
-
-I did some digging and I think I found the issue for why overriding
-`ExtendSelectionVerticallyToAdjacentLineIntent` and
-`ExtendSelectionVerticallyToAdjacentPageIntent` does not work.
+Yes, that naturally fixes assertion errors. This does not fix `ExtendSelectionVerticallyToAdjacentLineIntent` and `ExtendSelectionVerticallyToAdjacentPageIntent` still running their default actions however.
+--
+author:	lebeshev
+association:	none
+edited:	false
+status:	none
+--
+I did some digging and I think I found the issue for why overriding `ExtendSelectionVerticallyToAdjacentLineIntent` and `ExtendSelectionVerticallyToAdjacentPageIntent` does not work.
 
 Here is the code from `editable_text.dart` :
-
 ```dart
 // line 5455
   late final _UpdateTextSelectionVerticallyAction<DirectionalCaretMovementIntent>
@@ -811,45 +832,36 @@ Here is the code from `editable_text.dart` :
 }
 ```
 
-Action used for both `ExtendSelectionVerticallyToAdjacentLineIntent` and
-`ExtendSelectionVerticallyToAdjacentPageIntent` is bound to
-`DirectionalCaretMovementIntent`, which I assume should not be the case.
+Action used for both `ExtendSelectionVerticallyToAdjacentLineIntent` and `ExtendSelectionVerticallyToAdjacentPageIntent` is bound to `DirectionalCaretMovementIntent`, which I assume should not be the case.
 
-And indeed overriding the `DirectionalCaretMovementIntent` itself like
-
+And indeed overriding the `DirectionalCaretMovementIntent` itself like 
 ```dart
 DirectionalCaretMovementIntent: MyDoNothingAction<DirectionalCaretMovementIntent>()
-```
-
-## fixes the issue and caret does not move anymore on `arrow up` and similar shortcuts.
-
-## author:	tirth-patel-nc association:	member edited:	false status:	none
-
+``` 
+fixes the issue and caret does not move anymore on `arrow up` and similar shortcuts.
+--
+author:	tirth-patel-nc
+association:	member
+edited:	false
+status:	none
+--
 Thanks for the report. Seeing the same behaviour with latest SDK versions.
 
 ```
 stable : 3.38.5
 master : 3.40.0-1.0.pre-413
 ```
+--
+author:	loic-sharma
+association:	member
+edited:	true
+status:	none
+--
+This appears to be a bug in [`Action.overridable`](https://api.flutter.dev/flutter/widgets/Action/Action.overridable.html). `Action.overridable` is an action that can be overridden by an action higher up the widget tree.
 
-## -- author:	loic-sharma association:	member edited:	true status:	none
+Like @PurplePolyhedron mentioned above, [`DoNothingAction`](https://api.flutter.dev/flutter/widgets/DoNothingAction-class.html)'s docs claims it can bind to any intent.
 
-This appears to be a bug in
-[`Action.overridable`](https://api.flutter.dev/flutter/widgets/Action/Action.overridable.html).
-`Action.overridable` is an action that can be overridden by an action higher up
-the widget tree.
-
-Like @PurplePolyhedron mentioned above,
-[`DoNothingAction`](https://api.flutter.dev/flutter/widgets/DoNothingAction-class.html)'s
-docs claims it can bind to any intent.
-
-However, `Action.overridable` does not appear to take `DoNothingAction` into
-account properly. When it finds an override action, it checks that that override
-action's intent matches the overridden action's intent:
-[1](https://github.com/flutter/flutter/blob/96403e0fa5704dacd8fee2509b9333a86b3c7fed/packages/flutter/lib/src/widgets/actions.dart#L907),
-[2](https://github.com/flutter/flutter/blob/96403e0fa5704dacd8fee2509b9333a86b3c7fed/packages/flutter/lib/src/widgets/actions.dart#L920).
-It seems this check needs to be updated to also allow for `DoNothingAction` -
-its intent will not match the overridden action's intent.
+However, `Action.overridable` does not appear to take `DoNothingAction` into account properly. When it finds an override action, it checks that that override action's intent matches the overridden action's intent: [1](https://github.com/flutter/flutter/blob/96403e0fa5704dacd8fee2509b9333a86b3c7fed/packages/flutter/lib/src/widgets/actions.dart#L907), [2](https://github.com/flutter/flutter/blob/96403e0fa5704dacd8fee2509b9333a86b3c7fed/packages/flutter/lib/src/widgets/actions.dart#L920). It seems this check needs to be updated to also allow for `DoNothingAction` - its intent will not match the overridden action's intent.
 
 <details>
 <summary>Minimal repro app...</summary>
@@ -928,138 +940,121 @@ class IncrementIntent extends Intent {
 }
 ```
 
-## -- author:	LongCatIsLooong association:	member edited:	false status:	none
 
-Yeah the `T` in `Action<T>` is supposed to be contravariant so the check doesn't
-make sense
-https://github.com/flutter/flutter/blob/96403e0fa5704dacd8fee2509b9333a86b3c7fed/packages/flutter/lib/src/widgets/actions.dart#L922
+--
+author:	LongCatIsLooong
+association:	member
+edited:	false
+status:	none
+--
+Yeah the `T` in `Action<T>` is supposed to be contravariant so the check doesn't make sense https://github.com/flutter/flutter/blob/96403e0fa5704dacd8fee2509b9333a86b3c7fed/packages/flutter/lib/src/widgets/actions.dart#L922
 
-## Unfortunately I don't think we have a way to do that check properly (https://github.com/dart-lang/language/issues/524) so I think we'll have to get rid of the `is` check entirely
-
-## author:	LongCatIsLooong association:	member edited:	false status:	none
-
-Hmm maybe we can construct a const `Function<T>` in each `Action<T>` and does
-the type check like this:
-
+Unfortunately I don't think we have a way to do that check properly (https://github.com/dart-lang/language/issues/524) so I think we'll have to get rid of the `is` check entirely 
+--
+author:	LongCatIsLooong
+association:	member
+edited:	false
+status:	none
+--
+Hmm maybe we can construct a const `Function<T>` in each `Action<T>` and does the type check like this:
 ```dart
 mappedAction._functionSignature is Function<T>
 ```
-
-## But this means people won't be able to `implement Action<T>`. Let me try this out.
-
-## author:	LongCatIsLooong association:	member edited:	false status:	none
-
-## The above tricks seems to work but unforunately some of our public APIs return `Action<T>` and the language only allows for covariant type parameters so there's no way you can return a `Action<Intent>` when `T` is a more specialized type. And `Function` is final so we can't do `Action<T> extends Function<T>`, and also Function type literal has a special syntax `Function(U)`.
-
-## author:	lebeshev association:	none edited:	false status:	none
-
-> I did some digging and I think I found the issue for why overriding
-> `ExtendSelectionVerticallyToAdjacentLineIntent` and
-> `ExtendSelectionVerticallyToAdjacentPageIntent` does not work.
->
+But this means people won't be able to `implement Action<T>`. Let me try this out.
+--
+author:	LongCatIsLooong
+association:	member
+edited:	false
+status:	none
+--
+The above tricks seems to work but unforunately some of our public APIs return `Action<T>` and the language only allows for covariant type parameters so there's no way you can return a `Action<Intent>` when `T` is a more specialized type. And `Function` is final so we can't do `Action<T> extends Function<T>`, and also Function type literal has a special syntax `Function(U)`.
+--
+author:	lebeshev
+association:	none
+edited:	false
+status:	none
+--
+> I did some digging and I think I found the issue for why overriding `ExtendSelectionVerticallyToAdjacentLineIntent` and `ExtendSelectionVerticallyToAdjacentPageIntent` does not work.
+> 
 > Here is the code from `editable_text.dart` :
->
-> // line 5455 late final
-> _UpdateTextSelectionVerticallyAction<DirectionalCaretMovementIntent>
-> _verticalSelectionUpdateAction =
-> _UpdateTextSelectionVerticallyAction<DirectionalCaretMovementIntent>(this); //
-> ...
->
-> // line 5512 late final Map<Type, Action<Intent>> _actions = <Type,
-> Action<Intent>>{ // ... // line 5570
-> ExtendSelectionVerticallyToAdjacentLineIntent:
-> _makeOverridable(_verticalSelectionUpdateAction),
-> ExtendSelectionVerticallyToAdjacentPageIntent:
-> _makeOverridable(_verticalSelectionUpdateAction), // ... }
->
-> Action used for both `ExtendSelectionVerticallyToAdjacentLineIntent` and
-> `ExtendSelectionVerticallyToAdjacentPageIntent` is bound to
-> `DirectionalCaretMovementIntent`, which I assume should not be the case.
->
+> 
+> // line 5455
+>   late final _UpdateTextSelectionVerticallyAction<DirectionalCaretMovementIntent>
+>   _verticalSelectionUpdateAction =
+>       _UpdateTextSelectionVerticallyAction<DirectionalCaretMovementIntent>(this);
+> // ...
+> 
+> // line 5512
+>   late final Map<Type, Action<Intent>> _actions = <Type, Action<Intent>>{
+> // ...
+> // line 5570
+>     ExtendSelectionVerticallyToAdjacentLineIntent: _makeOverridable(_verticalSelectionUpdateAction),
+>     ExtendSelectionVerticallyToAdjacentPageIntent: _makeOverridable(_verticalSelectionUpdateAction),
+> // ...
+> }
+> 
+> Action used for both `ExtendSelectionVerticallyToAdjacentLineIntent` and `ExtendSelectionVerticallyToAdjacentPageIntent` is bound to `DirectionalCaretMovementIntent`, which I assume should not be the case.
+> 
 > And indeed overriding the `DirectionalCaretMovementIntent` itself like
->
-> DirectionalCaretMovementIntent:
-> MyDoNothingAction<DirectionalCaretMovementIntent>()
->
-> fixes the issue and caret does not move anymore on `arrow up` and similar
-> shortcuts.
+> 
+> DirectionalCaretMovementIntent: MyDoNothingAction<DirectionalCaretMovementIntent>()
+> 
+> fixes the issue and caret does not move anymore on `arrow up` and similar shortcuts.
 
-## Should I create a separate issue for this bug?
+Should I create a separate issue for this bug?
+--
+author:	LongCatIsLooong
+association:	member
+edited:	false
+status:	none
+--
+> Action used for both `ExtendSelectionVerticallyToAdjacentLineIntent` and `ExtendSelectionVerticallyToAdjacentPageIntent` is bound to `DirectionalCaretMovementIntent`, which I assume should not be the case.
 
-## author:	LongCatIsLooong association:	member edited:	false status:	none
+Hmm I'm not sure what you mean, it makes sense to me that `ExtendSelectionVerticallyToX` should be a subclass of `DirectionalCaretMovementIntent`?
+--
+author:	lebeshev
+association:	none
+edited:	false
+status:	none
+--
+> > Action used for both `ExtendSelectionVerticallyToAdjacentLineIntent` and `ExtendSelectionVerticallyToAdjacentPageIntent` is bound to `DirectionalCaretMovementIntent`, which I assume should not be the case.
+> 
+> Hmm I'm not sure what you mean, it makes sense to me that `ExtendSelectionVerticallyToX` should be a subclass of `DirectionalCaretMovementIntent`?
 
-> Action used for both `ExtendSelectionVerticallyToAdjacentLineIntent` and
-> `ExtendSelectionVerticallyToAdjacentPageIntent` is bound to
-> `DirectionalCaretMovementIntent`, which I assume should not be the case.
+The issue is that you cannot override `ExtendSelectionVerticallyToAdjacentPageIntent` and `ExtendSelectionVerticallyToAdjacentLineIntent` individually even when using something like`MyDoNothingAction<ExtendSelectionVerticallyToAdjacentPageIntent>()` and `MyDoNothingAction<ExtendSelectionVerticallyToAdjacentLineIntent>()`. You need to use `MyDoNothingAction<DirectionalCaretMovementIntent>()`, which will override them both.
 
-## Hmm I'm not sure what you mean, it makes sense to me that `ExtendSelectionVerticallyToX` should be a subclass of `DirectionalCaretMovementIntent`?
-
-## author:	lebeshev association:	none edited:	false status:	none
-
->> Action used for both `ExtendSelectionVerticallyToAdjacentLineIntent` and
->> `ExtendSelectionVerticallyToAdjacentPageIntent` is bound to
->> `DirectionalCaretMovementIntent`, which I assume should not be the case.
->
-> Hmm I'm not sure what you mean, it makes sense to me that
-> `ExtendSelectionVerticallyToX` should be a subclass of
-> `DirectionalCaretMovementIntent`?
-
-The issue is that you cannot override
-`ExtendSelectionVerticallyToAdjacentPageIntent` and
-`ExtendSelectionVerticallyToAdjacentLineIntent` individually even when using
-something
-like`MyDoNothingAction<ExtendSelectionVerticallyToAdjacentPageIntent>()` and
-`MyDoNothingAction<ExtendSelectionVerticallyToAdjacentLineIntent>()`. You need
-to use `MyDoNothingAction<DirectionalCaretMovementIntent>()`, which will
-override them both.
-
-And my guess is that this happens because action used in `editable_text.dart`
-for both these intents is defined bound to `DirectionalCaretMovementIntent` like
-this:
-
+And my guess is that this happens because action used in `editable_text.dart` for both these intents is defined bound to `DirectionalCaretMovementIntent` like this:
 ```dart
-late final _UpdateTextSelectionVerticallyAction<DirectionalCaretMovementIntent>
-_verticalSelectionUpdateAction =
-    _UpdateTextSelectionVerticallyAction<DirectionalCaretMovementIntent>(this);
+  late final _UpdateTextSelectionVerticallyAction<DirectionalCaretMovementIntent>
+  _verticalSelectionUpdateAction =
+      _UpdateTextSelectionVerticallyAction<DirectionalCaretMovementIntent>(this);
 ```
+--
+author:	LongCatIsLooong
+association:	member
+edited:	true
+status:	none
+--
+> > > Action used for both `ExtendSelectionVerticallyToAdjacentLineIntent` and `ExtendSelectionVerticallyToAdjacentPageIntent` is bound to `DirectionalCaretMovementIntent`, which I assume should not be the case.
+> > 
+> > 
+> > Hmm I'm not sure what you mean, it makes sense to me that `ExtendSelectionVerticallyToX` should be a subclass of `DirectionalCaretMovementIntent`?
+> 
+> The issue is that you cannot override `ExtendSelectionVerticallyToAdjacentPageIntent` and `ExtendSelectionVerticallyToAdjacentLineIntent` individually even when using something like`MyDoNothingAction<ExtendSelectionVerticallyToAdjacentPageIntent>()` and `MyDoNothingAction<ExtendSelectionVerticallyToAdjacentLineIntent>()`. You need to use `MyDoNothingAction<DirectionalCaretMovementIntent>()`, which will override them both.
+> 
+> And my guess is that this happens because action used in `editable_text.dart` for both these intents is defined bound to `DirectionalCaretMovementIntent` like this:
+> 
+>   late final _UpdateTextSelectionVerticallyAction<DirectionalCaretMovementIntent>
+>   _verticalSelectionUpdateAction =
+>       _UpdateTextSelectionVerticallyAction<DirectionalCaretMovementIntent>(this);
 
-## -- author:	LongCatIsLooong association:	member edited:	true status:	none
+Ah I might have fixed that in #180883. It's probably because we were using the statically inferred type `T extends Intent` to find the override action instead of using the `Intent`'s runtime type. Let me add a test for that later.
 
->>> Action used for both `ExtendSelectionVerticallyToAdjacentLineIntent` and
->>> `ExtendSelectionVerticallyToAdjacentPageIntent` is bound to
->>> `DirectionalCaretMovementIntent`, which I assume should not be the case.
->>
->> Hmm I'm not sure what you mean, it makes sense to me that
->> `ExtendSelectionVerticallyToX` should be a subclass of
->> `DirectionalCaretMovementIntent`?
->
-> The issue is that you cannot override
-> `ExtendSelectionVerticallyToAdjacentPageIntent` and
-> `ExtendSelectionVerticallyToAdjacentLineIntent` individually even when using
-> something
-> like`MyDoNothingAction<ExtendSelectionVerticallyToAdjacentPageIntent>()` and
-> `MyDoNothingAction<ExtendSelectionVerticallyToAdjacentLineIntent>()`. You need
-> to use `MyDoNothingAction<DirectionalCaretMovementIntent>()`, which will
-> override them both.
->
-> And my guess is that this happens because action used in `editable_text.dart`
-> for both these intents is defined bound to `DirectionalCaretMovementIntent`
-> like this:
->
-> late final
-> _UpdateTextSelectionVerticallyAction<DirectionalCaretMovementIntent>
-> _verticalSelectionUpdateAction =
-> _UpdateTextSelectionVerticallyAction<DirectionalCaretMovementIntent>(this);
-
-Ah I might have fixed that in #180883. It's probably because we were using the
-statically inferred type `T extends Intent` to find the override action instead
-of using the `Intent`'s runtime type. Let me add a test for that later.
-
-## Update: Yeah I think I might have fixed that case in the said PR. But the limitation is that you won't be able to access `callingAction`, which is basically the equivalent of the super implementation when you're implementing the override.
+Update: Yeah I think I might have fixed that case in the said PR. But the limitation is that you won't be able to access `callingAction`, which is basically the equivalent of the super implementation when you're implementing the override.
+--
 
     </comments>
-
-</issue>
+  </issue>
   <issue id="179482">
     <title>Semi-transparent keyboard on iOS 26 reveals widgets that do not draw under it</title>
     <body>
@@ -1077,11 +1072,12 @@ of using the `Intent`'s runtime type. Let me add a test for that later.
 
 ### Steps to reproduce
 
-Platforms iOS
 
-When you click on the text input box in the BottomSheet Modal, the color around
-the rounded corner at the top of the semi-transparent keyboard that pops up is
-incorrect
+Platforms
+iOS
+
+When you click on the text input box in the BottomSheet Modal, the color around the rounded corner at the top of the semi-transparent keyboard that pops up is incorrect
+
 
 ### Expected results
 
@@ -1089,12 +1085,7 @@ incorrect
 
 ### Actual results
 
-When using the keyboard inside an open Bottom Sheet Modal, the modal shifts
-upward to make room for the keyboard. However, this causes the semi-transparent
-keyboard on iOS 26 to display a black background instead of showing the modal's
-content. Please note, this is not a corner-radius issue—the entire keyboard,
-being semi-transparent, clearly shows a black background during dragging, which
-is inconsistent with the modal's color.
+When using the keyboard inside an open Bottom Sheet Modal, the modal shifts upward to make room for the keyboard. However, this causes the semi-transparent keyboard on iOS 26 to display a black background instead of showing the modal's content. Please note, this is not a corner-radius issue—the entire keyboard, being semi-transparent, clearly shows a black background during dragging, which is inconsistent with the modal's color.
 
 ### Code sample
 
@@ -1379,6 +1370,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
 </details>
 
+
 ### Screenshots or Video
 
 <details open>
@@ -1390,6 +1382,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
 </details>
 
+
 ### Logs
 
 <details open><summary>Logs</summary>
@@ -1399,6 +1392,7 @@ class _HomeScreenState extends State<HomeScreen> {
 ```
 
 </details>
+
 
 ### Flutter Doctor output
 
@@ -1412,11 +1406,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
     </body>
     <comments>
-
-## author:	tirth-patel-nc association:	member edited:	false status:	none
-
-Thanks for the report. Seeing the same behaviour with latest SDK versions on
-iOS 26. Appears fine on iOS 18.
+author:	tirth-patel-nc
+association:	member
+edited:	false
+status:	none
+--
+Thanks for the report. Seeing the same behaviour with latest SDK versions on iOS 26. Appears fine on iOS 18. 
 
 ```
 stable : 3.38.4
@@ -1430,7 +1425,7 @@ association:	contributor
 edited:	true
 status:	none
 --
-This also happens in a normal text field, from what I have seen. We need to get a hotfix for this ASAP
+This also happens in a normal text field, from what I have seen. We need to get a hotfix for this ASAP 
 Same issue here
 
 <img width="322" height="357" alt="Image" src="https://github.com/user-attachments/assets/77fbca37-8d6b-4b0d-933e-21d79ce220f5" />
@@ -1442,16 +1437,21 @@ status:	none
 --
 This is the color of the modal barrier, now that the keyboard does not completely obscure the rectangular area at the bottom. This is going to require a somewhat large change, every bottom sheet widget may have to be updated how it handles `viewInsets` (I don't think there are many such widgets in flutter/flutter but a lot of packages will have to update their UI).
 
-## We'll have to change the definition / documentation of `MediaQueryData.viewInsets`, and update material/cupertino widgets like the material bottom sheet so they extend to cover the keyboard area instead of moving up to avoid the keyboard area.
-
-## author:	loic-sharma association:	member edited:	true status:	none
-
-## I've routed this to the framework team's triage as per @LongCatIsLooong's investigation it appears the fix will need to be in bottom sheets. Please feel free to send it back to the text input team if needed!
-
-## author:	LongCatIsLooong association:	member edited:	false status:	none
-
-FWIW, this is the UI hierarchy of the FlutterViewController when the soft
-keyboard pops up:
+We'll have to change the definition / documentation of `MediaQueryData.viewInsets`, and update material/cupertino widgets like the material bottom sheet so they extend to cover the keyboard area instead of moving up to avoid the keyboard area.
+--
+author:	loic-sharma
+association:	member
+edited:	true
+status:	none
+--
+I've routed this to the framework team's triage as per @LongCatIsLooong's investigation it appears the fix will need to be in bottom sheets. Please feel free to send it back to the text input team if needed!
+--
+author:	LongCatIsLooong
+association:	member
+edited:	false
+status:	none
+--
+FWIW, this is the UI hierarchy of the FlutterViewController when the soft keyboard pops up:
 
 <img width="243" height="622" alt="Image" src="https://github.com/user-attachments/assets/cdeee19a-e6c7-4e63-b9d0-48b287975329" />
 --
@@ -1467,7 +1467,7 @@ association:	member
 edited:	false
 status:	none
 --
-Ah ok, so Flutter is still drawing under the keyboard? During triage I wasn't sure if the FlutterView even extended below the keyboard.
+Ah ok, so Flutter is still drawing under the keyboard? During triage I wasn't sure if the FlutterView even extended below the keyboard. 
 We also discussed, this probably is not limited to just bottom sheets. The Scaffold for example can resize to avoid the bottom inset. We should check that as well.
 --
 author:	Piinks
@@ -1495,60 +1495,64 @@ status:	none
 - We should check use cases for SearchAnchor as well (--> _SearchViewRoute --> _ViewContent)
   - The ListView in _ViewContentState uses viewInsets to pad itself.
 
-These are the ones I found in my investigation today we should validate against
-in addition to those above. This will require a series of changes to several
-widgets and not something we would hot fix.
+These are the ones I found in my investigation today we should validate against in addition to those above.
+This will require a series of changes to several widgets and not something we would hot fix. 
 
-Another case to consider as well, in some cases this will probably not be as
-simple as 'draw further below the keyboard', or to just fill the pace with the
-background color.
+Another case to consider as well, in some cases this will probably not be as simple as 'draw further below the keyboard', or to just fill the pace with the background color. 
 
 Consider this, looking at the native contacts app:
 
 <img width="147" height="320" alt="Image" src="https://github.com/user-attachments/assets/3d82a955-502e-4b15-b87f-b9f391def5b5" />
 
-The keyboard is up. The text field is focused and in view. I can scroll the page
-(which dismisses the keyboard). You can see the rest of the page contents under
-the keyboard, the blurry green buttons and such.
+The keyboard is up. The text field is focused and in view. I can scroll the page (which dismisses the keyboard).
+You can see the rest of the page contents under the keyboard, the blurry green buttons and such.
 
-Currently, when the Scaffold resizes to avoid the bottom inset, if Scaffold.body
-contains a scroll view, the viewport itself ends up resizing to fit within the
-visible space the scaffold allots to it, instead of extending below the
-keyboard. Changing this viewport resize case might require further changes to
-things like getOffsetToReveal, showOnScreen, and ensureVisible, which are used
-to scroll things like a text field into view when the keyboard pops up.
+Currently, when the Scaffold resizes to avoid the bottom inset, if Scaffold.body contains a scroll view, the viewport itself ends up resizing to fit within the visible space the scaffold allots to it, instead of extending below the keyboard. Changing this viewport resize case might require further changes to things like getOffsetToReveal, showOnScreen, and ensureVisible, which are used to scroll things like a text field into view when the keyboard pops up.
 
-## This should probably be a dedicated project for someone to tackle and investigate all the angles here. I am going to un-assign myself for now after having had a look, and will add to the queue for planning.
+This should probably be a dedicated project for someone to tackle and investigate all the angles here. I am going to un-assign myself for now after having had a look, and will add to the queue for planning.
+--
+author:	Piinks
+association:	member
+edited:	false
+status:	none
+--
+For planning as well: When we have this assigned and determine the course of action (and maybe even a workaround for the meantime) we should send out word to the ecosystem. There are likely other widgets in packages out there that need to account for this as well.
+--
+author:	CarGuo
+association:	none
+edited:	false
+status:	none
+--
 
-## author:	Piinks association:	member edited:	false status:	none
-
-## For planning as well: When we have this assigned and determine the course of action (and maybe even a workaround for the meantime) we should send out word to the ecosystem. There are likely other widgets in packages out there that need to account for this as well.
-
-## author:	CarGuo association:	none edited:	false status:	none
-
-Actually, why not temporarily solve the problem by configuring this in the plist
-for the time being?
+Actually, why not temporarily solve the problem by configuring this in the plist for the time being?
 
 ```xml
+	
 <key>UIDesignRequiresCompatibility</key>
 <true/>
+
 ```
 
-| false                                                                                                                                | true                                                                                                                                 |
-| ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
-| <img width="1206" height="2622" alt="Image" src="https://github.com/user-attachments/assets/5e9a6c61-52d3-4e56-b509-a354e0b4140e" /> | <img width="1206" height="2622" alt="Image" src="https://github.com/user-attachments/assets/432e18f8-ac30-4a00-ada4-b00ece0bdc3a" /> |
 
-## -- author:	CarGuo association:	none edited:	false status:	none
+|  false |  true  |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| <img width="1206" height="2622" alt="Image" src="https://github.com/user-attachments/assets/5e9a6c61-52d3-4e56-b509-a354e0b4140e" />  |  <img width="1206" height="2622" alt="Image" src="https://github.com/user-attachments/assets/432e18f8-ac30-4a00-ada4-b00ece0bdc3a" /> |
 
-Perhaps the situation isn't as bad as it seems? If the opacity issue mainly
-occurs in scenarios where the content is aligned at the bottom, like in
-`BottomSheet`? For scenarios like Dialog, after I modified the code as shown
-below, it still looks normal, keyboard perspective effect compatible with iOS
-26:
+
+--
+author:	CarGuo
+association:	none
+edited:	false
+status:	none
+--
+Perhaps the situation isn't as bad as it seems? If the opacity issue mainly occurs in scenarios where the content is aligned at the bottom, like in `BottomSheet`? For scenarios like Dialog, after I modified the code as shown below, it still looks normal, keyboard perspective effect compatible with iOS 26:
+
 
 <img width="1206" height="2622" alt="Image" src="https://github.com/user-attachments/assets/afd39aeb-17a4-4252-8baf-07c6eee5155e" />
 
-```dart
+
+
+```dart 
 import 'package:flutter/material.dart';
 
 void main() {
@@ -1770,10 +1774,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 ```
-
 --
 
     </comments>
-
-</issue>
+  </issue>
 </collection>
+

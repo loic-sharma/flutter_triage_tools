@@ -6,7 +6,7 @@ void main(List<String> args) async {
   //   'is:open is:issue label:team-text-input,fyi-text-input no:assignee -label:triaged-text-input',
   // ];
   if (args.length != 1) {
-    print('Usage: flutter_triage_tools <issue query>');
+    print('Usage: create_summarize_issues_prompt <issue query>');
     return;
   }
 
@@ -34,7 +34,7 @@ void main(List<String> args) async {
   final buffer = StringBuffer();
   buffer.writeln('''
 <instructions>
-Summarize each of the following GitHub issues in 1-3 sentences.
+Summarize each of the following GitHub issues.
 
 Suggest a title for each, in sentence case. If the issue is specific to a
 platform, prefix the title with the platform name, e.g. "[Android]" or "[iOS]".
@@ -47,7 +47,9 @@ platform, prefix the title with the platform name, e.g. "[Android]" or "[iOS]".
 **Issue ID**: [flutter#123](https://github.com/flutter/flutter/issues/123)
 
 **Summary**: When Backspace is pressed on a virtual keyboard of certain Samsung
-devices, the keypress is not sent to the TextField.
+devices, the keypress is not sent to the TextField. This appears to be a bug in
+`_HighlightModeManager`: it assumes all `KeyMessage`s are physical key presses,
+however, Android's backspace virtual key can send a `KeyMessage`.
 
 </example_output>
 ''');
