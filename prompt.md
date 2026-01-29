@@ -19,6 +19,162 @@ however, Android's backspace virtual key can send a `KeyMessage`.
 </example_output>
 
 <collection>
+  <issue id="181487">
+    <title>[Windows] TextField Cannot Completely Disable System IME</title>
+    <body>
+### Use case
+
+Flutter's TextField widget lacks proper control over system Input Method Editors (IME). While developers can configure keyboard layouts and input formatting, there's no reliable way to prevent IME activation - especially problematic for CJK languages where IMEs automatically engage.
+
+
+
+### Proposal
+
+Current properties like keyboardType, textInputAction, and inputFormatters only control keyboard appearance and text filtering, but cannot prevent IME composition states. This breaks applications requiring direct keyboard input only (OTP/PIN entry, terminals, command interfaces).
+
+Numeric-only fields still trigger IME composition
+Real-time validation disrupted by IME intermediate states
+Inconsistent behavior across platforms
+No workaround for CJK language environments
+    </body>
+    <comments>
+author:	W2XiaoYu
+association:	none
+edited:	false
+status:	none
+--
+I have created a plugin called "force_english_ime": ^0.0.3. You can give it a try. Hope this helps you.
+--
+
+    </comments>
+  </issue>
+  <issue id="181474">
+    <title>[iPadOS]Keyboard is dismissed, but the TextField keeps focus, causing subsequent taps not to trigger keyboard presentation.</title>
+    <body>
+### Steps to reproduce
+
+1. With ipados 26.2. 
+2. Set `keyboardType` into `TextInputType.number`.
+3. Tap the `TextField` widget.
+4. Tap outside. And you can see the 「floated small number keypad」 is dismissed, BUT the `TextField` keeps focus.
+5. Now you tap the `TextField` again, the number keypad will not show again anymore.
+
+
+### Expected results
+
+Tap TextField widget, show keyboard. 
+Tap outside, hide keyboard and unfocus.
+Tap TextField widget Again, show keyboard again.
+...
+
+### Actual results
+
+keyboard dont show again.
+
+### Code sample
+
+<details open><summary>Code sample</summary>
+
+```dart
+[Paste your code here]
+```
+
+</details>
+
+
+### Screenshots or Video
+
+<details open>
+<summary>Screenshots / Video demonstration</summary>
+
+[Upload media here]
+
+https://github.com/user-attachments/assets/75a094ef-91f1-471a-b436-44e258107d93
+
+</details>
+
+
+### Logs
+
+<details open><summary>Logs</summary>
+
+```console
+[Paste your logs here]
+```
+
+</details>
+
+
+### Flutter Doctor output
+
+<details open><summary>Doctor output</summary>
+
+```console
+[✓] Flutter (Channel stable, 3.38.1, on macOS 26.2 25C56 darwin-arm64,
+    locale zh-Hans-CN) [1,713ms]
+    • Flutter version 3.38.1 on channel stable at
+      /Users/EsPsl/fvm/versions/3.38.1
+    • Upstream repository https://github.com/flutter/flutter.git
+    • Framework revision b45fa18946 (2 months ago), 2025-11-12 22:09:06
+      -0600
+    • Engine revision b5990e5ccc
+    • Dart version 3.10.0
+    • DevTools version 2.51.1
+    • Feature flags: enable-web, enable-linux-desktop,
+      enable-macos-desktop, enable-windows-desktop, enable-android,
+      enable-ios, cli-animations, enable-native-assets,
+      omit-legacy-version-file, enable-lldb-debugging,
+      enable-uiscene-migration
+
+[✓] Android toolchain - develop for Android devices (Android SDK version
+    36.1.0-rc1) [4.2s]
+    • Android SDK at /Volumes/ExternalSSD/DevEnv/AndroidSdk
+    • Emulator version 36.1.9.0 (build_id 13823996) (CL:N/A)
+    • Platform android-36, build-tools 36.1.0-rc1
+    • Java binary at: /Applications/Android
+      Studio.app/Contents/jbr/Contents/Home/bin/java
+      This is the JDK bundled with the latest Android Studio installation
+      on this machine.
+      To manually set the JDK path, use: `flutter config
+      --jdk-dir="path/to/jdk"`.
+    • Java version OpenJDK Runtime Environment (build
+      21.0.7+-13880790-b1038.58)
+    • All Android licenses accepted.
+
+[✓] Xcode - develop for iOS and macOS (Xcode 26.1.1) [3.9s]
+    • Xcode at /Applications/Xcode.app/Contents/Developer
+    • Build 17B100
+    • CocoaPods version 1.16.2
+
+[✓] Chrome - develop for the web [7ms]
+    • Chrome at /Applications/Google Chrome.app/Contents/MacOS/Google
+      Chrome
+
+[✓] Connected device (6 available) [10.3s]
+    • Psl (wireless) (mobile)      ...
+
+[!] Network resources [75.1s]           
+    ✗ A network error occurred while checking
+      "https://maven.google.com/": Operation timed out
+
+! Doctor found issues in 1 category.
+```
+
+</details>
+
+    </body>
+    <comments>
+author:	Crazymuyang
+association:	none
+edited:	false
+status:	none
+--
+New trouble.
+If you use a M chip iPad and tap a TextField widget set with `TextInputType.number`, the keyboard is hard to appear.
+--
+
+    </comments>
+  </issue>
   <issue id="181231">
     <title>[SelectionArea] An incorrect context menu popped up when SelectionArea was nested</title>
     <body>
@@ -1774,6 +1930,176 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 ```
+--
+
+    </comments>
+  </issue>
+  <issue id="159670">
+    <title>[Android]  After enabling autofillHints, the keyboard automatically hide after entering the first letter</title>
+    <body>
+### Steps to reproduce
+
+run this code on a physical Android device (with autofill data populated), then input a letter.
+
+### Expected results
+
+Do not auto-hide keyboard
+
+### Actual results
+
+the keyboard auto hide
+
+### Code sample
+
+```dart
+import 'package:flutter/material.dart';
+
+void main(List<String> args) {
+  runApp(
+    MaterialApp(
+      home: Scaffold(
+        body: Center(
+          child: TextField(
+            autofillHints: [AutofillHints.name],
+          ),
+        ),
+      ),
+    ),
+  );
+}
+```
+
+### Screenshots or Video
+
+_No response_
+
+### Logs
+
+_No response_
+
+### Flutter Doctor output
+
+<details open><summary>Doctor output</summary>
+
+```console
+Doctor summary (to see all details, run
+flutter doctor -v):
+[✓] Flutter (Channel stable, 3.19.6, on
+    macOS 15.1.1 24B91 darwin-arm64,
+    locale zh-Hans-CN)
+[✓] Android toolchain - develop for
+    Android devices (Android SDK version
+    34.0.0)
+[✓] Xcode - develop for iOS and macOS
+    (Xcode 15.4)
+[✓] Chrome - develop for the web
+[✓] Android Studio (version 2023.1)
+[✓] VS Code (version 1.95.3)
+[✓] Connected device (4 available)
+[✓] Network resources
+
+• No issues found!
+```
+
+</details>
+
+    </body>
+    <comments>
+author:	darshankawar
+association:	member
+edited:	false
+status:	none
+--
+@jiagengArctuition 
+What android device does this occur on ? Can you provide make and model of it ? Does it occur with Gboard or default keyboard ?
+Also, please try to upgrade to latest stable and re-run your scenario to check if the behavior still persist or not.
+
+--
+author:	jiagengArctuition
+association:	none
+edited:	false
+status:	none
+--
+@darshankawar I tried Gboard, and indeed it doesn't have this issue. However, both the system's built-in Sogou input method and the installed WeChat input method have this problem.
+--
+author:	jiagengArctuition
+association:	none
+edited:	false
+status:	none
+--
+@darshankawar I tried other Android apps on my phone, and they also have autofill, but this strange behavior does not occur when I use Sogou or WeChat input methods. It seems to be a Flutter-specific issue.
+--
+author:	darshankawar
+association:	member
+edited:	false
+status:	none
+--
+@jiagengArctuition 
+Did you try to upgrade to latest stable to check if the issue persist or not ?
+--
+author:	jiagengArctuition
+association:	none
+edited:	false
+status:	none
+--
+@darshankawar Yes, this issue also exists in the latest version 3.24.5
+--
+author:	darshankawar
+association:	member
+edited:	false
+status:	none
+--
+@jiagengArctuition 
+What Android device are you using that shows this issue ? I verified on S10+ with which the name is autofilled and I am able to input letter after it properly, but with Chinese input language, I am unable to see the autofill hints showing up. Can you provide us a short video ?
+--
+author:	jiagengArctuition
+association:	none
+edited:	false
+status:	none
+--
+@darshankawar My Android phone is OnePlus 9, I'm using WeChat Input Method, and this is my screen recording.
+
+https://github.com/user-attachments/assets/6b7338ed-07b6-44ee-9358-c828cc243dc1
+
+
+
+Here are the download links for WeChat Input Method and Sogou Input Method. They are the most popular input methods in China. And they work normally when used in other applications.
+
+https://z.weixin.qq.com/web/changelog/android
+https://apkdl.sogouimecdn.com/wapdl/android/apk/SogouInput_12.0.1_android_sweb.apk
+--
+author:	darshankawar
+association:	member
+edited:	false
+status:	none
+--
+Thanks for the update. I installed the Sogou input keyboard on S10+ device and using it, was able to replicate the reported behavior on latest sdk versions.
+
+```
+stable : 3.24.5
+master : 3.27.0-1.0.pre.710
+```
+--
+author:	flutter-triage-bot
+association:	none
+edited:	false
+status:	none
+--
+This issue is assigned to @LongCatIsLooong but has had no recent status updates. Please consider unassigning this issue if it is not going to be addressed in the near future. This allows people to have a clearer picture of what work is actually planned. Thanks!
+--
+author:	flutter-triage-bot
+association:	none
+edited:	false
+status:	none
+--
+This issue is assigned to @LongCatIsLooong but has had no recent status updates. Please consider unassigning this issue if it is not going to be addressed in the near future. This allows people to have a clearer picture of what work is actually planned. Thanks!
+--
+author:	flutter-triage-bot
+association:	none
+edited:	false
+status:	none
+--
+This issue was assigned to @LongCatIsLooong but has had no status updates in a long time. To remove any ambiguity about whether the issue is being worked on, the assignee was removed.
 --
 
     </comments>
