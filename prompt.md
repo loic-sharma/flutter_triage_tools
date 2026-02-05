@@ -19,31 +19,189 @@ however, Android's backspace virtual key can send a `KeyMessage`.
 </example_output>
 
 <collection>
-  <issue id="181487">
-    <title>[Windows] TextField Cannot Completely Disable System IME</title>
+  <issue id="181873">
+    <title>Don't duplicate Semantics logic in TextField and CupertinoTextField</title>
     <body>
-### Use case
+We should move all possible Semantics logic out of the design languages and into EditableText, to be DRY and to make sure that direct users of EditableText can easily get nitty gritty semantics details right.
 
-Flutter's TextField widget lacks proper control over system Input Method Editors (IME). While developers can configure keyboard layouts and input formatting, there's no reliable way to prevent IME activation - especially problematic for CJK languages where IMEs automatically engage.
+## Background
 
+Currently, EditableText only includes a Semantics widget for toolbar operations:
 
+https://github.com/flutter/flutter/blob/018a57179c12c7d4ee1fb225b4759d2c05047b20/packages/flutter/lib/src/widgets/editable_text.dart#L5800-L5805
 
-### Proposal
+Meanwhile [in TextField](https://github.com/flutter/flutter/blob/018a57179c12c7d4ee1fb225b4759d2c05047b20/packages/flutter/lib/src/material/text_field.dart#L1795-L1799) and [in CupertinoTextField](https://github.com/flutter/flutter/blob/018a57179c12c7d4ee1fb225b4759d2c05047b20/packages/flutter/lib/src/cupertino/text_field.dart#L1630-L1632), there is Semantics logic for gestures and focus that is relevant to all users of text input.
 
-Current properties like keyboardType, textInputAction, and inputFormatters only control keyboard appearance and text filtering, but cannot prevent IME composition states. This breaks applications requiring direct keyboard input only (OTP/PIN entry, terminals, command interfaces).
+## Recommendation
 
-Numeric-only fields still trigger IME composition
-Real-time validation disrupted by IME intermediate states
-Inconsistent behavior across platforms
-No workaround for CJK language environments
+We should move all possible common semantics logic out of TextField/CupertinoTextField and into EditableText.
+
+As a part of that PR, we should also move the test mentioned in https://github.com/flutter/flutter/pull/181722/files#r2760694144 back to the Widgets library, since it tests this semantics logic.
+
+## Resources
+
+This came up in: https://github.com/flutter/flutter/pull/181722/files#r2760694144
     </body>
     <comments>
-author:	W2XiaoYu
+
+    </comments>
+  </issue>
+  <issue id="181682">
+    <title>Add a Cupertino version of SelectableText</title>
+    <body>
+While looking to fix up the last Cupertino test (test/cupertino/text_selection_test.dart) in https://github.com/flutter/flutter/pull/181634  that had a cross import to Material, I ended up being blocked, because that test uses `SelectableText.rich` and there is no Cupertino equivalent of SelectableText yet.
+
+We probably need a Cupertino version of this, to fix that test.
+
+Part of https://github.com/flutter/flutter/issues/177415
+
+cc @justinmc We can probably remove the Cupertino tests from the umbrella issue once https://github.com/flutter/flutter/pull/181634 lands, and replace it with this issue instead, since that is the only remaining point?
+    </body>
+    <comments>
+
+    </comments>
+  </issue>
+  <issue id="181532">
+    <title>Widgetspan in not correctly aligned with other TextSpan inside Text.rich</title>
+    <body>
+### Steps to reproduce
+
+1. Run code below on [Dart Pad](https://dartpad.dev/)
+2. Change size of the window like in the video attached.
+
+### Expected results
+
+The texts AAA, BBB and CCC must be drawn consecutively without any strange line breaks.
+
+### Actual results
+
+After reducing window size, a strange line appear between AAA and BBB parts.
+
+It seems like the WidgetSpan act like a single rectangle and because of that the TextSpan around cannot align correctly.
+It could be interesting to have a solution (maybe it exist ?) to have a "multiline WidgetSpan with pixel perfect hit box".
+
+My goal is to achieve something like bellow. I would like to put a custom border around a specific text : 
+
+<img width="1317" height="210" alt="Image" src="https://github.com/user-attachments/assets/200bc826-7777-4180-ab94-fd995a272ae2" />
+
+### Code sample
+
+<details open><summary>Code sample</summary>
+
+This example is small to hide all useless decoration added to the WidgetSpan in my app.
+
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        body: Center(
+          child: const Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(text: 'AAA AAA AAA AAA '),
+                WidgetSpan(
+                  child: Text(
+                    'BBB BBB BBB BBB BBB BBB BBB BBB BBB BBB BBB BBB BBB BBB BBB BBB BBB BBB BBB BBB BBB BBB BBB BBB ',
+                  ),
+                ),
+                TextSpan(text: ' CCC CCC CCC CCC'),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+```
+
+</details>
+
+
+### Screenshots or Video
+
+<details open>
+<summary>Screenshots / Video demonstration</summary>
+
+Alignement broken : 
+
+https://github.com/user-attachments/assets/6fa49351-cf2c-48de-a659-4aacd468aa79
+
+Shape is rectangular : 
+<img width="636" height="99" alt="Image" src="https://github.com/user-attachments/assets/16505e9c-14fd-417e-b06d-f8e1e7927997" />
+
+</details>
+
+
+### Logs
+
+<details open><summary>Logs</summary>
+
+```console
+```
+
+</details>
+
+
+### Flutter Doctor output
+
+<details open><summary>Doctor output</summary>
+
+```console
+[✓] Flutter (Channel stable, 3.29.3, on macOS 26.2 25C56 darwin-arm64, locale fr-FR) [2,0s]
+    • Flutter version 3.29.3 on channel stable at /Users/earminjon/fvm/versions/3.29.3
+    • Upstream repository https://github.com/flutter/flutter.git
+    • Framework revision ea121f8859 (10 months ago), 2025-04-11 19:10:07 +0000
+    • Engine revision cf56914b32
+    • Dart version 3.7.2
+    • DevTools version 2.42.3
+
+[✓] Chrome - develop for the web [90ms]
+    • Chrome at /Applications/Google Chrome.app/Contents/MacOS/Google Chrome
+
+[✓] IntelliJ IDEA Ultimate Edition (version 2025.3.2) [88ms]
+    • IntelliJ at /Users/earminjon/Applications/IntelliJ IDEA.app
+    • Flutter plugin version 89.0.0
+    • Dart plugin version 502.0.0
+
+[✓] Connected device (3 available) [6,7s]
+    • macOS (desktop)                 • macos                 • darwin-arm64   • macOS 26.2 25C56 darwin-arm64
+    • Mac Designed for iPad (desktop) • mac-designed-for-ipad • darwin         • macOS 26.2 25C56 darwin-arm64
+    • Chrome (web)                    • chrome                • web-javascript • Google Chrome 143.0.7499.193
+
+[✓] Network resources [260ms]
+    • All expected network resources are available.
+```
+
+</details>
+
+    </body>
+    <comments>
+author:	darshankawar
+association:	member
+edited:	false
+status:	none
+--
+Replicable with latest stable and master versions, although this doesn't seem to be specific to web, as on desktop, it appears to replicate as well.
+
+--
+author:	flutter-triage-bot
 association:	none
 edited:	false
 status:	none
 --
-I have created a plugin called "force_english_ime": ^0.0.3. You can give it a try. Hope this helps you.
+The `fyi-text-input` label is redundant with the `team-text-input` label.
 --
 
     </comments>
@@ -172,235 +330,39 @@ status:	none
 New trouble.
 If you use a M chip iPad and tap a TextField widget set with `TextInputType.number`, the keyboard is hard to appear.
 --
-
-    </comments>
-  </issue>
-  <issue id="181231">
-    <title>[SelectionArea] An incorrect context menu popped up when SelectionArea was nested</title>
-    <body>
-### Steps to reproduce
-
-Right-clicking within a nested SelectionArea area may sometimes pop up the ContextMenu of the parent Selection.
-
-### Expected results
-
-Right-clicking within a nested SelectionArea area always pop up the ContextMenu of current SelectionArea.
-
-### Actual results
-
-Right-clicking within a nested SelectionArea area may sometimes pop up the ContextMenu of the parent Selection.
-
-### Code sample
-
-<details open><summary>Code sample</summary>
-
-```dart
-import 'package:flutter/material.dart';
-
-void main() {
-  runApp(const MainApp());
-}
-
-class MainApp extends StatefulWidget {
-  const MainApp({super.key});
-
-  @override
-  State<MainApp> createState() => _MainAppState();
-}
-
-class _MainAppState extends State<MainApp> {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(home: HomeScreen());
-  }
-}
-
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Home')),
-      body: SelectionArea(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            Text('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'),
-            SelectionArea(
-              child: Container(
-                height: 300,
-                color: Colors.yellow,
-                alignment: Alignment.center,
-                child: Text('bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'),
-              ),
-            ),
-            Text('ccccccccccccccccccccccccccccc'),
-          ],
-        ),
-      ),
-    );
-  }
-}
-```
-
-</details>
-
-
-### Screenshots or Video
-
-<details open>
-<summary>Screenshots / Video demonstration</summary>
-
-![Image](https://github.com/user-attachments/assets/10def7ed-9eb8-4f47-b55d-b8038ca1a8a0)
-
-</details>
-
-
-### Logs
-
-<details open><summary>Logs</summary>
-
-```console
-[Paste your logs here]
-```
-
-</details>
-
-
-### Flutter Doctor output
-
-<details open><summary>Doctor output</summary>
-
-```console
-[√] Flutter (Channel stable, 3.38.6, on Microsoft Windows [版本 10.0.26100.7462], locale zh-CN) [231ms]
-    • Flutter version 3.38.6 on channel stable at D:\Flutter\flutter_windows_latest\flutter
-    • Upstream repository https://github.com/flutter/flutter.git
-    • Framework revision 8b87286849 (12 days ago), 2026-01-08 10:49:17 -0800
-    • Engine revision 78fc3012e4
-    • Dart version 3.10.7
-    • DevTools version 2.51.1
-    • Pub download mirror https://pub.flutter-io.cn
-    • Flutter download mirror https://storage.flutter-io.cn
-    • Feature flags: enable-web, enable-linux-desktop, enable-macos-desktop, enable-windows-desktop, enable-android,
-      enable-ios, cli-animations, enable-native-assets, omit-legacy-version-file, enable-lldb-debugging
-
-[√] Windows Version (Windows 11 or higher, 24H2, 2009) [717ms]
-
-[√] Android toolchain - develop for Android devices (Android SDK version 36.0.0) [1,340ms]
-    • Android SDK at D:\Android\Sdk
-    • Emulator version 36.3.10.0 (build_id 14472402) (CL:N/A)
-    • Platform android-36, build-tools 36.0.0
-    • ANDROID_HOME = D:\Android\Sdk
-    • Java binary at: D:\Android\Studio\jbr\bin\java
-      This is the JDK bundled with the latest Android Studio installation on this machine.
-      To manually set the JDK path, use: `flutter config --jdk-dir="path/to/jdk"`.
-    • Java version OpenJDK Runtime Environment (build 21.0.8+-14196175-b1038.72)
-    • All Android licenses accepted.
-
-[√] Chrome - develop for the web [66ms]
-    • Chrome at C:\Program Files\Google\Chrome\Application\chrome.exe
-
-[√] Visual Studio - develop Windows apps (Visual Studio Community 2022 17.14.12) [65ms]
-    • Visual Studio at D:\VisualStudio\Community
-    • Visual Studio Community 2022 version 17.14.36408.4
-    • Windows 10 SDK version 10.0.26100.0
-
-[√] Connected device (3 available) [257ms]
-    • Windows (desktop) • windows • windows-x64    • Microsoft Windows [版本 10.0.26100.7462]
-    • Chrome (web)      • chrome  • web-javascript • Google Chrome 142.0.7444.176
-    • Edge (web)        • edge    • web-javascript • Microsoft Edge 144.0.3719.82
-
-[√] Network resources [832ms]
-    • All expected network resources are available.
-
-• No issues found!
-```
-
-</details>
-
-    </body>
-    <comments>
-author:	YaolongChen
-association:	none
-edited:	false
-status:	none
---
-Incidentally, even wrapping the nested `SelectionArea` with `SelectionContainer.disabled` didn't help.
-```dart
-import 'package:flutter/material.dart';
-
-void main() {
-  runApp(const MainApp());
-}
-
-class MainApp extends StatefulWidget {
-  const MainApp({super.key});
-
-  @override
-  State<MainApp> createState() => _MainAppState();
-}
-
-class _MainAppState extends State<MainApp> {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(home: HomeScreen());
-  }
-}
-
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Home')),
-      body: SelectionArea(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            Text('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'),
-            SelectionContainer.disabled(
-              child: SelectionArea(
-                child: Container(
-                  height: 300,
-                  color: Colors.yellow,
-                  alignment: Alignment.center,
-                  child: Text('bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'),
-                ),
-              ),
-            ),
-            Text('ccccccccccccccccccccccccccccc'),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-```
-
-![Image](https://github.com/user-attachments/assets/f0f0d3ff-c898-4b7f-8599-eabaa3162323)
---
-author:	tirth-patel-nc
+author:	LongCatIsLooong
 association:	member
 edited:	false
 status:	none
 --
-Thanks for the report. Seeing the same behaviour with latest SDK versions.
+It looks like the "floating" number pad doesn't show up on an iPhone and even on iPadOS if only showed up when I made the text field in my test app smaller (narrower so it doesn't take up the full screen width). 
 
-```
-stable : 3.38.7
-master : 3.41.0-1.0.pre-187
-```
+@Crazymuyang are you experiencing the same problem with UIKit text fields on iPadOS?
+
 --
-author:	flutter-triage-bot
+author:	Crazymuyang
 association:	none
 edited:	false
 status:	none
 --
-The `fyi-text-input` label is redundant with the `team-text-input` label.
-The `triaged-design` label is irrelevant if there is no `team-design` label or `fyi-design` label.
+> It looks like the "floating" number pad doesn't show up on an iPhone and even on iPadOS if only showed up when I made the text field in my test app smaller (narrower so it doesn't take up the full screen width).
+> 
+> [@Crazymuyang](https://github.com/Crazymuyang) are you experiencing the same problem with UIKit text fields on iPadOS?
+
+I have not test with UIKit.
+And you mean the problem is occured when the TextField is too small?
+--
+author:	LongCatIsLooong
+association:	member
+edited:	false
+status:	none
+--
+> > It looks like the "floating" number pad doesn't show up on an iPhone and even on iPadOS if only showed up when I made the text field in my test app smaller (narrower so it doesn't take up the full screen width).
+> > [@Crazymuyang](https://github.com/Crazymuyang) are you experiencing the same problem with UIKit text fields on iPadOS?
+> 
+> I have not test with UIKit. And you mean the problem is occured when the TextField is too small?
+
+No the new floating numpad sometimes doesn't show up, I was just documenting in case someone else wants to repro.
 --
 
     </comments>
@@ -709,539 +671,28 @@ It looks like these issues have similar root causes, I suspect we should mark th
 
     </comments>
   </issue>
-  <issue id="180435">
-    <title>Action.overridable cannot be overridden by a DoNothingAction</title>
+  <issue id="137817">
+    <title>IOS Emoji Selection is Higher than English Character</title>
     <body>
-### Steps to reproduce
+### Is there an existing issue for this?
 
-1. Wrap a `TextField` with `Actions` and use `DoNothingAction` for all text editing `Intent`s (see code sample)
-2. Run it, type in some text.
-3. Do  some text editing related shortcuts like `arrow left`, `arrow up`, `ctrl + A`, `backspace` etc.
-
-### Expected results
-
-1. `arrow up`, `arrow down`, `page up`, `page down`, `home` and `end` or in other words `ExtendSelectionVerticallyToAdjacentPageIntent` and `ExtendSelectionVerticallyToAdjacentLineIntent` do nothing
-2. for all other intents no assertion errors is thrown
-
-### Actual results
-
-1. `ExtendSelectionVerticallyToAdjacentPageIntent` and `ExtendSelectionVerticallyToAdjacentLineIntent` moves caret to the start/end of the text
-2. When all other intents are executed, the following assertion error is thrown (example for `SelectAllTextIntent`):
-```dart
-════════ Exception caught by services library ══════════════════════════════════
-The following assertion was thrown while processing the key message handler:
-SelectAllTextIntent cannot be handled by an Action of runtime type DoNothingAction.
-'package:flutter/src/widgets/actions.dart':
-Failed assertion: line 926 pos 9: 'false'
-
-Either the assertion indicates an error in the framework itself, or we should provide substantially more information in this error message to help you determine and fix the underlying cause.
-In either case, please report this assertion by filing a bug on GitHub:
-  https://github.com/flutter/flutter/issues/new?template=02_bug.yml
-
-When the exception was thrown, this was the stack:
-#2      Actions._castAction (package:flutter/src/widgets/actions.dart:926:9)
-actions.dart:926
-#3      Actions._maybeFindWithoutDependingOn.<anonymous closure> (package:flutter/src/widgets/actions.dart:907:33)
-actions.dart:907
-#4      Actions._visitActionsAncestors (package:flutter/src/widgets/actions.dart:746:18)
-actions.dart:746
-#5      Actions._maybeFindWithoutDependingOn (package:flutter/src/widgets/actions.dart:905:5)
-actions.dart:905
-#6      _OverridableActionMixin.getOverrideAction (package:flutter/src/widgets/actions.dart:1637:19)
-actions.dart:1637
-#7      _OverridableActionMixin.isEnabled (package:flutter/src/widgets/actions.dart:1706:39)
-actions.dart:1706
-#8      Action._isEnabled (package:flutter/src/widgets/actions.dart:247:45)
-actions.dart:247
-#9      ActionDispatcher.invokeActionIfEnabled (package:flutter/src/widgets/actions.dart:664:16)
-actions.dart:664
-#10     ShortcutManager.handleKeypress (package:flutter/src/widgets/shortcuts.dart:935:9)
-shortcuts.dart:935
-#11     _ShortcutsState._handleOnKeyEvent (package:flutter/src/widgets/shortcuts.dart:1135:20)
-shortcuts.dart:1135
-#12     _HighlightModeManager.handleKeyMessage (package:flutter/src/widgets/focus_manager.dart:2244:72)
-focus_manager.dart:2244
-#13     KeyEventManager._dispatchKeyMessage (package:flutter/src/services/hardware_keyboard.dart:1119:34)
-hardware_keyboard.dart:1119
-#14     KeyEventManager.handleRawKeyMessage (package:flutter/src/services/hardware_keyboard.dart:1195:17)
-hardware_keyboard.dart:1195
-#15     BasicMessageChannel.setMessageHandler.<anonymous closure> (package:flutter/src/services/platform_channel.dart:259:49)
-platform_channel.dart:259
-#16     _DefaultBinaryMessenger.setMessageHandler.<anonymous closure> (package:flutter/src/services/binding.dart:665:35)
-binding.dart:665
-#17     _invoke2 (dart:ui/hooks.dart:388:13)
-hooks.dart:388
-#18     _ChannelCallbackRecord.invoke (dart:ui/channel_buffers.dart:45:5)
-channel_buffers.dart:45
-#19     _Channel.push (dart:ui/channel_buffers.dart:136:31)
-channel_buffers.dart:136
-#20     ChannelBuffers.push (dart:ui/channel_buffers.dart:344:17)
-channel_buffers.dart:344
-```
-
-### Code sample
-
-<details open><summary>Code sample</summary>
-
-```dart
-import 'package:flutter/material.dart';
-
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(colorScheme: .fromSeed(seedColor: Colors.deepPurple)),
-      home: Scaffold(
-        body: Actions(
-          actions: {
-            DeleteCharacterIntent: DoNothingAction(),
-            DeleteToNextWordBoundaryIntent: DoNothingAction(),
-            DeleteToLineBreakIntent: DoNothingAction(),
-            ExtendSelectionByCharacterIntent: DoNothingAction(),
-            ExtendSelectionToNextWordBoundaryIntent: DoNothingAction(),
-            ExtendSelectionToNextWordBoundaryOrCaretLocationIntent:
-                DoNothingAction(),
-            ExtendSelectionToLineBreakIntent: DoNothingAction(),
-            ExtendSelectionVerticallyToAdjacentLineIntent: DoNothingAction(),
-            ExtendSelectionVerticallyToAdjacentPageIntent: DoNothingAction(),
-            ExtendSelectionToDocumentBoundaryIntent: DoNothingAction(),
-            SelectAllTextIntent: DoNothingAction(),
-            ReplaceTextIntent: DoNothingAction(),
-            UpdateSelectionIntent: DoNothingAction(),
-            CopySelectionTextIntent: DoNothingAction(),
-            PasteTextIntent: DoNothingAction(),
-          },
-          child: const TextField(enableInteractiveSelection: false),
-        ),
-      ),
-    );
-  }
-}
-```
-
-</details>
-
-
-### Screenshots or Video
-
-_No response_
-
-### Logs
-
-_No response_
-
-### Flutter Doctor output
-
-<details open><summary>Doctor output</summary>
-
-```console
-[✓] Flutter (Channel stable, 3.38.5, on Pop!_OS 24.04 LTS 6.17.9-76061709-generic, locale en_US.UTF-8) [26ms]
-    • Flutter version 3.38.5 on channel stable at /home/alexander/.develop/flutter
-    • Upstream repository https://github.com/flutter/flutter.git
-    • Framework revision f6ff1529fd (3 weeks ago), 2025-12-11 11:50:07 -0500
-    • Engine revision 1527ae0ec5
-    • Dart version 3.10.4
-    • DevTools version 2.51.1
-    • Feature flags: enable-web, enable-linux-desktop, enable-macos-desktop, enable-windows-desktop, enable-android, enable-ios,
-      cli-animations, enable-native-assets, omit-legacy-version-file, enable-lldb-debugging
-
-[✓] Android toolchain - develop for Android devices (Android SDK version 36.1.0) [998ms]
-    • Android SDK at /home/alexander/.android/sdk/
-    • Emulator version 36.3.10.0 (build_id 14472402) (CL:N/A)
-    • Platform android-36, build-tools 36.1.0
-    • Java binary at: /home/alexander/.local/android-studio/jbr/bin/java
-      This is the JDK bundled with the latest Android Studio installation on this machine.
-      To manually set the JDK path, use: `flutter config --jdk-dir="path/to/jdk"`.
-    • Java version OpenJDK Runtime Environment (build 21.0.8+-14196175-b1038.72)
-    • All Android licenses accepted.
-
-[✓] Chrome - develop for the web [8ms]
-    • Chrome at google-chrome
-
-[✓] Linux toolchain - develop for Linux desktop [370ms]
-    • Ubuntu clang version 18.1.3 (1ubuntu1)
-    • cmake version 3.28.3
-    • ninja version 1.11.1
-    • pkg-config version 1.8.1
-    • OpenGL core renderer: Mesa Intel(R) Iris(R) Xe Graphics (RPL-P)
-    • OpenGL core version: 4.6 (Core Profile) Mesa 25.1.5-1pop0~1753463422~24.04~8af185e
-    • OpenGL core shading language version: 4.60
-    • OpenGL ES renderer: Mesa Intel(R) Iris(R) Xe Graphics (RPL-P)
-    • OpenGL ES version: OpenGL ES 3.2 Mesa 25.1.5-1pop0~1753463422~24.04~8af185e
-    • OpenGL ES shading language version: OpenGL ES GLSL ES 3.20
-    • GL_EXT_framebuffer_blit: yes
-    • GL_EXT_texture_format_BGRA8888: yes
-
-[✓] Connected device (2 available) [125ms]
-    • Linux (desktop) • linux  • linux-x64      • Pop!_OS 24.04 LTS 6.17.9-76061709-generic
-    • Chrome (web)    • chrome • web-javascript • Google Chrome 143.0.7499.169
-
-[✓] Network resources [363ms]
-    • All expected network resources are available.
-
-• No issues found!
-```
-
-</details>
-
-    </body>
-    <comments>
-author:	PurplePolyhedron
-association:	contributor
-edited:	true
-status:	none
---
-It seems that `DoNothingAction` couldn't actually bind to any `Intent` in this case, despite the document saying it should be able to.
-A possible workaround is to create your own `Intent` specific `DoNothingAction`.
-
-```dart
-import 'package:flutter/material.dart';
-
-void main() {
-  runApp(const ActionApp());
-}
-
-class MyDoNothingAction<T extends Intent> extends Action<T> {
-  @override
-  void invoke(T intent) {}
-}
-
-class ActionApp extends StatelessWidget {
-  const ActionApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple)),
-      home: Scaffold(
-        body: Actions(
-          actions: {
-            DeleteCharacterIntent: MyDoNothingAction<DeleteCharacterIntent>(),
-            DeleteToNextWordBoundaryIntent: MyDoNothingAction<DeleteToNextWordBoundaryIntent>(),
-            DeleteToLineBreakIntent: MyDoNothingAction<DeleteToLineBreakIntent>(),
-            ExtendSelectionByCharacterIntent: MyDoNothingAction<ExtendSelectionByCharacterIntent>(),
-            ExtendSelectionToNextWordBoundaryIntent:
-                MyDoNothingAction<ExtendSelectionToNextWordBoundaryIntent>(),
-            ExtendSelectionToNextWordBoundaryOrCaretLocationIntent:
-                MyDoNothingAction<ExtendSelectionToNextWordBoundaryOrCaretLocationIntent>(),
-            ExtendSelectionToLineBreakIntent: MyDoNothingAction<ExtendSelectionToLineBreakIntent>(),
-            ExtendSelectionVerticallyToAdjacentLineIntent:
-                MyDoNothingAction<ExtendSelectionVerticallyToAdjacentLineIntent>(),
-            ExtendSelectionVerticallyToAdjacentPageIntent:
-                MyDoNothingAction<ExtendSelectionVerticallyToAdjacentPageIntent>(),
-            ExtendSelectionToDocumentBoundaryIntent:
-                MyDoNothingAction<ExtendSelectionToDocumentBoundaryIntent>(),
-            SelectAllTextIntent: MyDoNothingAction<SelectAllTextIntent>(),
-            ReplaceTextIntent: MyDoNothingAction<ReplaceTextIntent>(),
-            UpdateSelectionIntent: MyDoNothingAction<UpdateSelectionIntent>(),
-            CopySelectionTextIntent: MyDoNothingAction<CopySelectionTextIntent>(),
-            PasteTextIntent: MyDoNothingAction<PasteTextIntent>(),
-          },
-          child: const TextField(enableInteractiveSelection: false),
-        ),
-      ),
-    );
-  }
-}
-```
-
---
-author:	lebeshev
-association:	none
-edited:	false
-status:	none
---
-> A possible workaround is to create your own Intent specific DoNothingAction.
-
-Yes, that naturally fixes assertion errors. This does not fix `ExtendSelectionVerticallyToAdjacentLineIntent` and `ExtendSelectionVerticallyToAdjacentPageIntent` still running their default actions however.
---
-author:	lebeshev
-association:	none
-edited:	false
-status:	none
---
-I did some digging and I think I found the issue for why overriding `ExtendSelectionVerticallyToAdjacentLineIntent` and `ExtendSelectionVerticallyToAdjacentPageIntent` does not work.
-
-Here is the code from `editable_text.dart` :
-```dart
-// line 5455
-  late final _UpdateTextSelectionVerticallyAction<DirectionalCaretMovementIntent>
-  _verticalSelectionUpdateAction =
-      _UpdateTextSelectionVerticallyAction<DirectionalCaretMovementIntent>(this);
-// ...
-
-// line 5512
-  late final Map<Type, Action<Intent>> _actions = <Type, Action<Intent>>{
-// ...
-// line 5570
-    ExtendSelectionVerticallyToAdjacentLineIntent: _makeOverridable(_verticalSelectionUpdateAction),
-    ExtendSelectionVerticallyToAdjacentPageIntent: _makeOverridable(_verticalSelectionUpdateAction),
-// ...
-}
-```
-
-Action used for both `ExtendSelectionVerticallyToAdjacentLineIntent` and `ExtendSelectionVerticallyToAdjacentPageIntent` is bound to `DirectionalCaretMovementIntent`, which I assume should not be the case.
-
-And indeed overriding the `DirectionalCaretMovementIntent` itself like 
-```dart
-DirectionalCaretMovementIntent: MyDoNothingAction<DirectionalCaretMovementIntent>()
-``` 
-fixes the issue and caret does not move anymore on `arrow up` and similar shortcuts.
---
-author:	tirth-patel-nc
-association:	member
-edited:	false
-status:	none
---
-Thanks for the report. Seeing the same behaviour with latest SDK versions.
-
-```
-stable : 3.38.5
-master : 3.40.0-1.0.pre-413
-```
---
-author:	loic-sharma
-association:	member
-edited:	true
-status:	none
---
-This appears to be a bug in [`Action.overridable`](https://api.flutter.dev/flutter/widgets/Action/Action.overridable.html). `Action.overridable` is an action that can be overridden by an action higher up the widget tree.
-
-Like @PurplePolyhedron mentioned above, [`DoNothingAction`](https://api.flutter.dev/flutter/widgets/DoNothingAction-class.html)'s docs claims it can bind to any intent.
-
-However, `Action.overridable` does not appear to take `DoNothingAction` into account properly. When it finds an override action, it checks that that override action's intent matches the overridden action's intent: [1](https://github.com/flutter/flutter/blob/96403e0fa5704dacd8fee2509b9333a86b3c7fed/packages/flutter/lib/src/widgets/actions.dart#L907), [2](https://github.com/flutter/flutter/blob/96403e0fa5704dacd8fee2509b9333a86b3c7fed/packages/flutter/lib/src/widgets/actions.dart#L920). It seems this check needs to be updated to also allow for `DoNothingAction` - its intent will not match the overridden action's intent.
-
-<details>
-<summary>Minimal repro app...</summary>
-
-```dart
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-
-void main() => runApp(MaterialApp(home: CounterPage()));
-
-class CounterPage extends StatefulWidget {
-  @override
-  State<CounterPage> createState() => _CounterPageState();
-}
-
-class _CounterPageState extends State<CounterPage> {
-  int _count = 0;
-
-  void _increment() => setState(() => _count++);
-
-  @override
-  Widget build(BuildContext context) {
-    return Shortcuts(
-      shortcuts: <ShortcutActivator, Intent>{
-        LogicalKeySet(LogicalKeyboardKey.space): const IncrementIntent(),
-      },
-      child: Actions(
-        actions: <Type, Action<Intent>>{
-          IncrementIntent: DoNothingAction(),
-        },
-        child: Builder(
-          builder: (context) {
-            return Actions(
-              actions: <Type, Action<Intent>>{
-                // Option 1: Increment. Works as expected.
-                // IncrementIntent: CallbackAction<IncrementIntent>(
-                //   onInvoke: (IncrementIntent intent) => _increment(),
-                // ),
-
-                // Option 2: DoNothingAction. Works as expected.
-                // IncrementIntent: DoNothingAction(),
-
-                // Option 3: Allow parent Action to override with DoNothingAction. Does NOT work.
-                IncrementIntent: Action<IncrementIntent>.overridable(
-                  defaultAction: CallbackAction<IncrementIntent>(onInvoke: (IncrementIntent intent) => _increment()),
-                  context: context,
-                ),
-              },
-              child: Focus(
-                autofocus: true, // Focus is required for Shortcuts to work!
-                child: Scaffold(
-                  body: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text('Press SPACE to increment: $_count'),
-                      ],
-                    ),
-                  ),
-                  floatingActionButton: FloatingActionButton(
-                    onPressed: _increment,
-                    child: const Icon(Icons.add),
-                  ),
-                ),
-              ),
-            );
-          }
-        ),
-      ),
-    );
-  }
-}
-
-class IncrementIntent extends Intent {
-  const IncrementIntent();
-}
-```
-
-
---
-author:	LongCatIsLooong
-association:	member
-edited:	false
-status:	none
---
-Yeah the `T` in `Action<T>` is supposed to be contravariant so the check doesn't make sense https://github.com/flutter/flutter/blob/96403e0fa5704dacd8fee2509b9333a86b3c7fed/packages/flutter/lib/src/widgets/actions.dart#L922
-
-Unfortunately I don't think we have a way to do that check properly (https://github.com/dart-lang/language/issues/524) so I think we'll have to get rid of the `is` check entirely 
---
-author:	LongCatIsLooong
-association:	member
-edited:	false
-status:	none
---
-Hmm maybe we can construct a const `Function<T>` in each `Action<T>` and does the type check like this:
-```dart
-mappedAction._functionSignature is Function<T>
-```
-But this means people won't be able to `implement Action<T>`. Let me try this out.
---
-author:	LongCatIsLooong
-association:	member
-edited:	false
-status:	none
---
-The above tricks seems to work but unforunately some of our public APIs return `Action<T>` and the language only allows for covariant type parameters so there's no way you can return a `Action<Intent>` when `T` is a more specialized type. And `Function` is final so we can't do `Action<T> extends Function<T>`, and also Function type literal has a special syntax `Function(U)`.
---
-author:	lebeshev
-association:	none
-edited:	false
-status:	none
---
-> I did some digging and I think I found the issue for why overriding `ExtendSelectionVerticallyToAdjacentLineIntent` and `ExtendSelectionVerticallyToAdjacentPageIntent` does not work.
-> 
-> Here is the code from `editable_text.dart` :
-> 
-> // line 5455
->   late final _UpdateTextSelectionVerticallyAction<DirectionalCaretMovementIntent>
->   _verticalSelectionUpdateAction =
->       _UpdateTextSelectionVerticallyAction<DirectionalCaretMovementIntent>(this);
-> // ...
-> 
-> // line 5512
->   late final Map<Type, Action<Intent>> _actions = <Type, Action<Intent>>{
-> // ...
-> // line 5570
->     ExtendSelectionVerticallyToAdjacentLineIntent: _makeOverridable(_verticalSelectionUpdateAction),
->     ExtendSelectionVerticallyToAdjacentPageIntent: _makeOverridable(_verticalSelectionUpdateAction),
-> // ...
-> }
-> 
-> Action used for both `ExtendSelectionVerticallyToAdjacentLineIntent` and `ExtendSelectionVerticallyToAdjacentPageIntent` is bound to `DirectionalCaretMovementIntent`, which I assume should not be the case.
-> 
-> And indeed overriding the `DirectionalCaretMovementIntent` itself like
-> 
-> DirectionalCaretMovementIntent: MyDoNothingAction<DirectionalCaretMovementIntent>()
-> 
-> fixes the issue and caret does not move anymore on `arrow up` and similar shortcuts.
-
-Should I create a separate issue for this bug?
---
-author:	LongCatIsLooong
-association:	member
-edited:	false
-status:	none
---
-> Action used for both `ExtendSelectionVerticallyToAdjacentLineIntent` and `ExtendSelectionVerticallyToAdjacentPageIntent` is bound to `DirectionalCaretMovementIntent`, which I assume should not be the case.
-
-Hmm I'm not sure what you mean, it makes sense to me that `ExtendSelectionVerticallyToX` should be a subclass of `DirectionalCaretMovementIntent`?
---
-author:	lebeshev
-association:	none
-edited:	false
-status:	none
---
-> > Action used for both `ExtendSelectionVerticallyToAdjacentLineIntent` and `ExtendSelectionVerticallyToAdjacentPageIntent` is bound to `DirectionalCaretMovementIntent`, which I assume should not be the case.
-> 
-> Hmm I'm not sure what you mean, it makes sense to me that `ExtendSelectionVerticallyToX` should be a subclass of `DirectionalCaretMovementIntent`?
-
-The issue is that you cannot override `ExtendSelectionVerticallyToAdjacentPageIntent` and `ExtendSelectionVerticallyToAdjacentLineIntent` individually even when using something like`MyDoNothingAction<ExtendSelectionVerticallyToAdjacentPageIntent>()` and `MyDoNothingAction<ExtendSelectionVerticallyToAdjacentLineIntent>()`. You need to use `MyDoNothingAction<DirectionalCaretMovementIntent>()`, which will override them both.
-
-And my guess is that this happens because action used in `editable_text.dart` for both these intents is defined bound to `DirectionalCaretMovementIntent` like this:
-```dart
-  late final _UpdateTextSelectionVerticallyAction<DirectionalCaretMovementIntent>
-  _verticalSelectionUpdateAction =
-      _UpdateTextSelectionVerticallyAction<DirectionalCaretMovementIntent>(this);
-```
---
-author:	LongCatIsLooong
-association:	member
-edited:	true
-status:	none
---
-> > > Action used for both `ExtendSelectionVerticallyToAdjacentLineIntent` and `ExtendSelectionVerticallyToAdjacentPageIntent` is bound to `DirectionalCaretMovementIntent`, which I assume should not be the case.
-> > 
-> > 
-> > Hmm I'm not sure what you mean, it makes sense to me that `ExtendSelectionVerticallyToX` should be a subclass of `DirectionalCaretMovementIntent`?
-> 
-> The issue is that you cannot override `ExtendSelectionVerticallyToAdjacentPageIntent` and `ExtendSelectionVerticallyToAdjacentLineIntent` individually even when using something like`MyDoNothingAction<ExtendSelectionVerticallyToAdjacentPageIntent>()` and `MyDoNothingAction<ExtendSelectionVerticallyToAdjacentLineIntent>()`. You need to use `MyDoNothingAction<DirectionalCaretMovementIntent>()`, which will override them both.
-> 
-> And my guess is that this happens because action used in `editable_text.dart` for both these intents is defined bound to `DirectionalCaretMovementIntent` like this:
-> 
->   late final _UpdateTextSelectionVerticallyAction<DirectionalCaretMovementIntent>
->   _verticalSelectionUpdateAction =
->       _UpdateTextSelectionVerticallyAction<DirectionalCaretMovementIntent>(this);
-
-Ah I might have fixed that in #180883. It's probably because we were using the statically inferred type `T extends Intent` to find the override action instead of using the `Intent`'s runtime type. Let me add a test for that later.
-
-Update: Yeah I think I might have fixed that case in the said PR. But the limitation is that you won't be able to access `callingAction`, which is basically the equivalent of the super implementation when you're implementing the override.
---
-
-    </comments>
-  </issue>
-  <issue id="179482">
-    <title>Semi-transparent keyboard on iOS 26 reveals widgets that do not draw under it</title>
-    <body>
-> [!NOTE]
-> If your app is affected by this problem, consider disabling Liquid Glass for your app by updating your `ios/Runner/Info.plist` file:
->
-> ```xml
-> <key>UIDesignRequiresCompatibility</key>
-> <true/>
-> ```
->
-> The `UIDesignRequiresCompatibility` property is a temporary workaround until Flutter fixes this issue. You will need to remove this property in the future.
->
-> For more details, see: https://developer.apple.com/documentation/BundleResources/Information-Property-List/UIDesignRequiresCompatibility
+- [X] I have searched the [existing issues](https://github.com/flutter/flutter/issues)
+- [X] I have read the [guide to filing a bug](https://flutter.dev/docs/resources/bug-reports)
 
 ### Steps to reproduce
 
-
-Platforms
-iOS
-
-When you click on the text input box in the BottomSheet Modal, the color around the rounded corner at the top of the semi-transparent keyboard that pops up is incorrect
-
+1. On IOS device (IOS 17, Iphone 15 Pro simulator), select text with emojis on `SelectableText`, `SelectionArea` containing `Text` widget.
 
 ### Expected results
 
-.
+1. On Android device, height of highlighted area of emojis is same with english character, expecting same behaviour on IOS devices.
+![image](https://github.com/flutter/flutter/assets/70849672/71cb609e-ad09-4574-83e6-4a6c8917eb3d)
 
 ### Actual results
 
-When using the keyboard inside an open Bottom Sheet Modal, the modal shifts upward to make room for the keyboard. However, this causes the semi-transparent keyboard on iOS 26 to display a black background instead of showing the modal's content. Please note, this is not a corner-radius issue—the entire keyboard, being semi-transparent, clearly shows a black background during dragging, which is inconsistent with the modal's color.
+1. On IOS device, highlighted area of emojis is higher than english character
+![image](https://github.com/flutter/flutter/assets/70849672/8a96736e-bc14-4d22-a876-d35a033727e8)
+
 
 ### Code sample
 
@@ -1260,268 +711,65 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Bottom Sheet Demo',
+      title: 'Flutter Text Selection Demo',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const HomeScreen(),
+      home: const MyHomePage(title: 'Flutter Text Selection Demo'),
     );
   }
 }
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+class MyHomePage extends StatefulWidget {
+  const MyHomePage({super.key, required this.title});
+  final String title;
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
-  // Controller for the text input field
-  final TextEditingController _textController = TextEditingController();
-  
-  // Focus node to manage keyboard focus
-  final FocusNode _textFocusNode = FocusNode();
-  
-  // Store user input
-  String _userInput = '';
-
-  @override
-  void dispose() {
-    _textController.dispose();
-    _textFocusNode.dispose();
-    super.dispose();
-  }
-
-  // Method to show the bottom sheet
-  void _showBottomSheet(BuildContext context) {
-    // Clear previous input when opening
-    _textController.clear();
-    
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true, // Allows sheet to move up with keyboard
-      backgroundColor: Colors.transparent,
-      builder: (BuildContext context) {
-        return GestureDetector(
-          onTap: () {
-            // Dismiss keyboard when tapping outside
-            FocusScope.of(context).unfocus();
-          },
-          child: Container(
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom, // Make room for keyboard
-            ),
-            child: _buildBottomSheetContent(context),
-          ),
-        );
-      },
-    ).then((value) {
-      // Handle when bottom sheet is closed
-      setState(() {
-        _userInput = _textController.text;
-      });
-    });
-    
-    // Request focus for the text field after a short delay
-    Future.delayed(const Duration(milliseconds: 300), () {
-      FocusScope.of(context).requestFocus(_textFocusNode);
-    });
-  }
-
-  // Build the content of the bottom sheet
-  Widget _buildBottomSheetContent(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header with close button
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Enter Your Text',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                IconButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  icon: const Icon(Icons.close),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            
-            // Text input field
-            TextField(
-              controller: _textController,
-              focusNode: _textFocusNode,
-              decoration: InputDecoration(
-                hintText: 'Type something here...',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                filled: true,
-                fillColor: Colors.grey[100],
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 16,
-                ),
-                suffixIcon: IconButton(
-                  onPressed: () {
-                    _textController.clear();
-                  },
-                  icon: const Icon(Icons.clear),
-                ),
-              ),
-              maxLines: 3,
-              minLines: 1,
-            ),
-            const SizedBox(height: 20),
-            
-            // Action buttons
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                // Cancel button
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  child: const Text('Cancel'),
-                ),
-                const SizedBox(width: 10),
-                
-                // Submit button
-                ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      _userInput = _textController.text;
-                    });
-                    Navigator.pop(context);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 12,
-                    ),
-                  ),
-                  child: const Text('Submit'),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
+class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Bottom Sheet Demo'),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              'Bottom Sheet Example',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
-            
-            // Display user input
-            Container(
-              padding: const EdgeInsets.all(20),
-              margin: const EdgeInsets.symmetric(horizontal: 20),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Column(
-                children: [
-                  const Text(
-                    'Your Input:',
-                    style: TextStyle(fontSize: 16, color: Colors.grey),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    _userInput.isEmpty ? 'No input yet' : _userInput,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 40),
-            
-            // Instructions
-            Container(
-              padding: const EdgeInsets.all(16),
-              margin: const EdgeInsets.symmetric(horizontal: 20),
-              decoration: BoxDecoration(
-                color: Colors.blue[50],
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.info, color: Colors.blue, size: 20),
-                      SizedBox(width: 8),
-                      Text(
-                        'How to use:',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Tap the button below to open a bottom sheet. The text field will automatically gain focus and the keyboard will appear.',
-                    style: TextStyle(fontSize: 14, color: Colors.blue),
-                  ),
-                ],
-              ),
-            ),
-          ],
+        appBar: AppBar(
+          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+          title: Text(widget.title),
         ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showBottomSheet(context),
-        icon: const Icon(Icons.edit),
-        label: const Text('Open Bottom Sheet'),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-    );
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const SizedBox(
+                height: 16,
+              ),
+              const Text(
+                'SelectableText',
+              ),
+              const SelectableText(
+                'Hello, world! 😀 good!',
+                style: TextStyle(
+                  fontSize: 20,
+                ),
+              ),
+              const SizedBox(
+                height: 40,
+              ),
+              const Text('SelectionArea containing Text'),
+              const SelectionArea(
+                child: Text(
+                  'Hello, world!😀 good!',
+                  style: TextStyle(fontSize: 20),
+                ),
+              ),
+            ],
+          ),
+        ));
   }
 }
+
 ```
 
 </details>
@@ -1529,19 +777,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
 ### Screenshots or Video
 
-<details open>
+<details>
 <summary>Screenshots / Video demonstration</summary>
 
 [Upload media here]
-
-<img width="377" height="413" alt="Image" src="https://github.com/user-attachments/assets/7f929d5c-986b-4b93-a407-62718b6282d1" />
 
 </details>
 
 
 ### Logs
 
-<details open><summary>Logs</summary>
+<details><summary>Logs</summary>
 
 ```console
 [Paste your logs here]
@@ -1552,554 +798,252 @@ class _HomeScreenState extends State<HomeScreen> {
 
 ### Flutter Doctor output
 
-<details open><summary>Doctor output</summary>
+<details><summary>Doctor output</summary>
 
 ```console
-[Paste your output here]
-```
-
-</details>
-
-    </body>
-    <comments>
-author:	tirth-patel-nc
-association:	member
-edited:	false
-status:	none
---
-Thanks for the report. Seeing the same behaviour with latest SDK versions on iOS 26. Appears fine on iOS 18. 
-
-```
-stable : 3.38.4
-master : 3.39.0-1.0.pre-426
-```
-
-<img width="1512" height="982" alt="Image" src="https://github.com/user-attachments/assets/2c03232a-1cfb-4b47-ae0a-f5bc712de0f4" />
---
-author:	lucas-goldner
-association:	contributor
-edited:	true
-status:	none
---
-This also happens in a normal text field, from what I have seen. We need to get a hotfix for this ASAP 
-Same issue here
-
-<img width="322" height="357" alt="Image" src="https://github.com/user-attachments/assets/77fbca37-8d6b-4b0d-933e-21d79ce220f5" />
---
-author:	LongCatIsLooong
-association:	member
-edited:	true
-status:	none
---
-This is the color of the modal barrier, now that the keyboard does not completely obscure the rectangular area at the bottom. This is going to require a somewhat large change, every bottom sheet widget may have to be updated how it handles `viewInsets` (I don't think there are many such widgets in flutter/flutter but a lot of packages will have to update their UI).
-
-We'll have to change the definition / documentation of `MediaQueryData.viewInsets`, and update material/cupertino widgets like the material bottom sheet so they extend to cover the keyboard area instead of moving up to avoid the keyboard area.
---
-author:	loic-sharma
-association:	member
-edited:	true
-status:	none
---
-I've routed this to the framework team's triage as per @LongCatIsLooong's investigation it appears the fix will need to be in bottom sheets. Please feel free to send it back to the text input team if needed!
---
-author:	LongCatIsLooong
-association:	member
-edited:	false
-status:	none
---
-FWIW, this is the UI hierarchy of the FlutterViewController when the soft keyboard pops up:
-
-<img width="243" height="622" alt="Image" src="https://github.com/user-attachments/assets/cdeee19a-e6c7-4e63-b9d0-48b287975329" />
---
-author:	LongCatIsLooong
-association:	member
-edited:	false
-status:	none
---
-Also IIRC [Scaffold.resizeToAvoidBottomInset](https://main-api.flutter.dev/flutter/material/Scaffold/resizeToAvoidBottomInset.html) defaults to true. This may no longer be the most reasonable behavior in case the app has a floating widget that wants to stay at the bottom of the screen but above the keyboard.
---
-author:	Piinks
-association:	member
-edited:	false
-status:	none
---
-Ah ok, so Flutter is still drawing under the keyboard? During triage I wasn't sure if the FlutterView even extended below the keyboard. 
-We also discussed, this probably is not limited to just bottom sheets. The Scaffold for example can resize to avoid the bottom inset. We should check that as well.
---
-author:	Piinks
-association:	member
-edited:	false
-status:	none
---
-Aha! @LongCatIsLooong too fast for me. :)
---
-author:	Piinks
-association:	member
-edited:	true
-status:	none
---
-Quick look, there are about ~40 - note: included MediaQuery classes~ 25 uses (not actually individual widgets) of viewInsets in flutter widgets. I imagine there could be more cases than those accounted for here. I'll make a list and work through it.
---
-author:	Piinks
-association:	member
-edited:	true
-status:	none
---
-- Scaffold.resizeToAvoidBottomInset
-- CupertinoPageScaffold.resizeToAvoidBottomInset
-- CupertinoTabScaffold.resizeToAvoidBottomInset
-- We should check use cases for SearchAnchor as well (--> _SearchViewRoute --> _ViewContent)
-  - The ListView in _ViewContentState uses viewInsets to pad itself.
-
-These are the ones I found in my investigation today we should validate against in addition to those above.
-This will require a series of changes to several widgets and not something we would hot fix. 
-
-Another case to consider as well, in some cases this will probably not be as simple as 'draw further below the keyboard', or to just fill the pace with the background color. 
-
-Consider this, looking at the native contacts app:
-
-<img width="147" height="320" alt="Image" src="https://github.com/user-attachments/assets/3d82a955-502e-4b15-b87f-b9f391def5b5" />
-
-The keyboard is up. The text field is focused and in view. I can scroll the page (which dismisses the keyboard).
-You can see the rest of the page contents under the keyboard, the blurry green buttons and such.
-
-Currently, when the Scaffold resizes to avoid the bottom inset, if Scaffold.body contains a scroll view, the viewport itself ends up resizing to fit within the visible space the scaffold allots to it, instead of extending below the keyboard. Changing this viewport resize case might require further changes to things like getOffsetToReveal, showOnScreen, and ensureVisible, which are used to scroll things like a text field into view when the keyboard pops up.
-
-This should probably be a dedicated project for someone to tackle and investigate all the angles here. I am going to un-assign myself for now after having had a look, and will add to the queue for planning.
---
-author:	Piinks
-association:	member
-edited:	false
-status:	none
---
-For planning as well: When we have this assigned and determine the course of action (and maybe even a workaround for the meantime) we should send out word to the ecosystem. There are likely other widgets in packages out there that need to account for this as well.
---
-author:	CarGuo
-association:	none
-edited:	false
-status:	none
---
-
-Actually, why not temporarily solve the problem by configuring this in the plist for the time being?
-
-```xml
-	
-<key>UIDesignRequiresCompatibility</key>
-<true/>
-
-```
-
-
-|  false |  true  |
-| ------------------------------------------------------------ | ------------------------------------------------------------ |
-| <img width="1206" height="2622" alt="Image" src="https://github.com/user-attachments/assets/5e9a6c61-52d3-4e56-b509-a354e0b4140e" />  |  <img width="1206" height="2622" alt="Image" src="https://github.com/user-attachments/assets/432e18f8-ac30-4a00-ada4-b00ece0bdc3a" /> |
-
-
---
-author:	CarGuo
-association:	none
-edited:	false
-status:	none
---
-Perhaps the situation isn't as bad as it seems? If the opacity issue mainly occurs in scenarios where the content is aligned at the bottom, like in `BottomSheet`? For scenarios like Dialog, after I modified the code as shown below, it still looks normal, keyboard perspective effect compatible with iOS 26:
-
-
-<img width="1206" height="2622" alt="Image" src="https://github.com/user-attachments/assets/afd39aeb-17a4-4252-8baf-07c6eee5155e" />
-
-
-
-```dart 
-import 'package:flutter/material.dart';
-
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Bottom Sheet Demo',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        useMaterial3: true,
-      ),
-      home: const HomeScreen(),
-    );
-  }
-}
-
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
-
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  // Controller for the text input field
-  final TextEditingController _textController = TextEditingController();
-
-  // Focus node to manage keyboard focus
-  final FocusNode _textFocusNode = FocusNode();
-
-  // Store user input
-  String _userInput = '';
-
-  @override
-  void dispose() {
-    _textController.dispose();
-    _textFocusNode.dispose();
-    super.dispose();
-  }
-
-  // Method to show the bottom sheet
-  void _showBottomSheet(BuildContext context) {
-    // Clear previous input when opening
-    _textController.clear();
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return Material(
-          color: Colors.transparent,
-          child:  GestureDetector(
-            onTap: () {
-              // Dismiss keyboard when tapping outside
-              FocusScope.of(context).unfocus();
-            },
-            child: Center(
-              child:  SizedBox(
-                height: 100,
-                child: _buildBottomSheetContent(context),
-              ),
-            ),
-          ),
-        );
-      },
-    ).then((value) {
-      // Handle when bottom sheet is closed
-      setState(() {
-        _userInput = _textController.text;
-      });
-    });
-
-    // Request focus for the text field after a short delay
-    Future.delayed(const Duration(milliseconds: 300), () {
-      FocusScope.of(context).requestFocus(_textFocusNode);
-    });
-  }
-
-  // Build the content of the bottom sheet
-  Widget _buildBottomSheetContent(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(5.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Text input field
-            TextField(
-              controller: _textController,
-              focusNode: _textFocusNode,
-              decoration: InputDecoration(
-                hintText: 'Type something here...',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                filled: true,
-                fillColor: Colors.grey[100],
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 16,
-                ),
-                suffixIcon: IconButton(
-                  onPressed: () {
-                    _textController.clear();
-                  },
-                  icon: const Icon(Icons.clear),
-                ),
-              ),
-              maxLines: 3,
-              minLines: 1,
-            ),
-            const SizedBox(height: 20),
-
-            // Action buttons
-          ],
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      resizeToAvoidBottomInset: false,
-      appBar: AppBar(
-        title: const Text('Bottom Sheet Demo'),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              'Bottom Sheet Example',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
-
-            // Display user input
-            Container(
-              padding: const EdgeInsets.all(20),
-              margin: const EdgeInsets.symmetric(horizontal: 20),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Column(
-                children: [
-                  const Text(
-                    'Your Input:',
-                    style: TextStyle(fontSize: 16, color: Colors.grey),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    _userInput.isEmpty ? 'No input yet' : _userInput,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 40),
-
-            // Instructions
-            Container(
-              padding: const EdgeInsets.all(16),
-              margin: const EdgeInsets.symmetric(horizontal: 20),
-              decoration: BoxDecoration(
-                color: Colors.red,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.info, color: Colors.blue, size: 20),
-                      SizedBox(width: 8),
-                      Text(
-                        'How to use:',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Tap the button below to open a bottom sheet. The text field will automatically gain focus and the keyboard will appear.',
-                    style: TextStyle(fontSize: 14, color: Colors.blue),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showBottomSheet(context),
-        icon: const Icon(Icons.edit),
-        backgroundColor: Colors.red,
-        label: const Text('Open Bottom Sheet'),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-    );
-  }
-}
-```
---
-
-    </comments>
-  </issue>
-  <issue id="159670">
-    <title>[Android]  After enabling autofillHints, the keyboard automatically hide after entering the first letter</title>
-    <body>
-### Steps to reproduce
-
-run this code on a physical Android device (with autofill data populated), then input a letter.
-
-### Expected results
-
-Do not auto-hide keyboard
-
-### Actual results
-
-the keyboard auto hide
-
-### Code sample
-
-```dart
-import 'package:flutter/material.dart';
-
-void main(List<String> args) {
-  runApp(
-    MaterialApp(
-      home: Scaffold(
-        body: Center(
-          child: TextField(
-            autofillHints: [AutofillHints.name],
-          ),
-        ),
-      ),
-    ),
-  );
-}
-```
-
-### Screenshots or Video
-
-_No response_
-
-### Logs
-
-_No response_
-
-### Flutter Doctor output
-
-<details open><summary>Doctor output</summary>
-
-```console
-Doctor summary (to see all details, run
-flutter doctor -v):
-[✓] Flutter (Channel stable, 3.19.6, on
-    macOS 15.1.1 24B91 darwin-arm64,
-    locale zh-Hans-CN)
-[✓] Android toolchain - develop for
-    Android devices (Android SDK version
-    34.0.0)
-[✓] Xcode - develop for iOS and macOS
-    (Xcode 15.4)
-[✓] Chrome - develop for the web
-[✓] Android Studio (version 2023.1)
-[✓] VS Code (version 1.95.3)
-[✓] Connected device (4 available)
+[✓] Flutter (Channel stable, 3.13.9, on macOS 14.1 23B74 darwin-x64, locale en-GB)
+[!] Android toolchain - develop for Android devices (Android SDK version 33.0.2)
+    ✗ cmdline-tools component is missing
+      Run `path/to/sdkmanager --install "cmdline-tools;latest"`
+      See https://developer.android.com/studio/command-line for more details.
+    ✗ Android license status unknown.
+      Run `flutter doctor --android-licenses` to accept the SDK licenses.
+      See https://flutter.dev/docs/get-started/install/macos#android-setup for more details.
+[!] Xcode - develop for iOS and macOS (Xcode 15.0.1)
+    ✗ CocoaPods installed but not working.
+        You appear to have CocoaPods installed but it is not working.
+        This can happen if the version of Ruby that CocoaPods was installed with is different from the one being used to invoke it.
+        This can usually be fixed by re-installing CocoaPods.
+      To re-install see https://guides.cocoapods.org/using/getting-started.html#installation for instructions.
+[✓] Android Studio (version 2022.3)
+[✓] VS Code (version 1.83.1)
+[✓] Connected device (2 available)
 [✓] Network resources
 
-• No issues found!
 ```
 
 </details>
 
     </body>
     <comments>
-author:	darshankawar
+author:	dam-ease
 association:	member
 edited:	false
 status:	none
 --
-@jiagengArctuition 
-What android device does this occur on ? Can you provide make and model of it ? Does it occur with Gboard or default keyboard ?
-Also, please try to upgrade to latest stable and re-run your scenario to check if the behavior still persist or not.
-
---
-author:	jiagengArctuition
-association:	none
-edited:	false
-status:	none
---
-@darshankawar I tried Gboard, and indeed it doesn't have this issue. However, both the system's built-in Sogou input method and the installed WeChat input method have this problem.
---
-author:	jiagengArctuition
-association:	none
-edited:	false
-status:	none
---
-@darshankawar I tried other Android apps on my phone, and they also have autofill, but this strange behavior does not occur when I use Sogou or WeChat input methods. It seems to be a Flutter-specific issue.
---
-author:	darshankawar
-association:	member
-edited:	false
-status:	none
---
-@jiagengArctuition 
-Did you try to upgrade to latest stable to check if the issue persist or not ?
---
-author:	jiagengArctuition
-association:	none
-edited:	false
-status:	none
---
-@darshankawar Yes, this issue also exists in the latest version 3.24.5
---
-author:	darshankawar
-association:	member
-edited:	false
-status:	none
---
-@jiagengArctuition 
-What Android device are you using that shows this issue ? I verified on S10+ with which the name is autofilled and I am able to input letter after it properly, but with Chinese input language, I am unable to see the autofill hints showing up. Can you provide us a short video ?
---
-author:	jiagengArctuition
-association:	none
-edited:	false
-status:	none
---
-@darshankawar My Android phone is OnePlus 9, I'm using WeChat Input Method, and this is my screen recording.
-
-https://github.com/user-attachments/assets/6b7338ed-07b6-44ee-9358-c828cc243dc1
+Hi @yuhangang. Thanks for filing this.
+I can reproduce both issues on the latest `master` and `stable` channels following the steps highlighted above. This isn't peculiar either iOS 17 or Impeller, as I can reproduce on other iOS versions both with and without Impeller.
 
 
-
-Here are the download links for WeChat Input Method and Sogou Input Method. They are the most popular input methods in China. And they work normally when used in other applications.
-
-https://z.weixin.qq.com/web/changelog/android
-https://apkdl.sogouimecdn.com/wapdl/android/apk/SogouInput_12.0.1_android_sweb.apk
---
-author:	darshankawar
-association:	member
-edited:	false
-status:	none
---
-Thanks for the update. I installed the Sogou input keyboard on S10+ device and using it, was able to replicate the reported behavior on latest sdk versions.
+<details><summary>stable, master flutter doctor -v</summary>
+<p>
 
 ```
-stable : 3.24.5
-master : 3.27.0-1.0.pre.710
+[!] Flutter (Channel stable, 3.13.9, on macOS 14.0 23A344 darwin-arm64, locale
+    en-NG)
+    • Flutter version 3.13.9 on channel stable at
+      /Users/damilolaalimi/sdks/flutter
+    ! Warning: `dart` on your path resolves to
+      /opt/homebrew/Cellar/dart/3.1.5/libexec/bin/dart, which is not inside your      current Flutter SDK checkout at /Users/damilolaalimi/sdks/flutter.
+      Consider adding /Users/damilolaalimi/sdks/flutter/bin to the front of your      path.
+    • Upstream repository https://github.com/flutter/flutter.git
+    • Framework revision d211f42860 (8 days ago), 2023-10-25 13:42:25 -0700
+    • Engine revision 0545f8705d
+    • Dart version 3.1.5
+    • DevTools version 2.25.0
+    • If those were intentional, you can disregard the above warnings; however
+      it is recommended to use "git" directly to perform update checks and
+      upgrades.
+
+[✓] Android toolchain - develop for Android devices (Android SDK version 34.0.0)
+    • Android SDK at /Users/damilolaalimi/Library/Android/sdk
+    • Platform android-34, build-tools 34.0.0
+    • ANDROID_HOME = /Users/damilolaalimi/Library/Android/sdk
+    • Java binary at: /Applications/Android
+      Studio.app/Contents/jbr/Contents/Home/bin/java
+    • Java version OpenJDK Runtime Environment (build
+      17.0.6+0-17.0.6b802.4-9586694)
+    • All Android licenses accepted.
+
+[✓] Xcode - develop for iOS and macOS (Xcode 15.0.1)
+    • Xcode at /Applications/Xcode.app/Contents/Developer
+    • Build 15A507
+    • CocoaPods version 1.12.1
+
+[✓] Chrome - develop for the web
+    • Chrome at /Applications/Google Chrome.app/Contents/MacOS/Google Chrome
+
+[✓] Android Studio (version 2022.2)
+    • Android Studio at /Applications/Android Studio.app/Contents
+    • Flutter plugin can be installed from:
+      🔨 https://plugins.jetbrains.com/plugin/9212-flutter
+    • Dart plugin can be installed from:
+      🔨 https://plugins.jetbrains.com/plugin/6351-dart
+    • Java version OpenJDK Runtime Environment (build
+      17.0.6+0-17.0.6b802.4-9586694)
+
+[!] Android Studio (version unknown)
+    • Android Studio at /Users/damilolaalimi/Downloads/Android Studio
+      Preview.app/Contents
+    • Flutter plugin can be installed from:
+      🔨 https://plugins.jetbrains.com/plugin/9212-flutter
+    • Dart plugin can be installed from:
+      🔨 https://plugins.jetbrains.com/plugin/6351-dart
+    ✗ Unable to determine Android Studio version.
+    • Java version OpenJDK Runtime Environment (build
+      17.0.7+0-17.0.7b1000.6-10550314)
+
+[✓] VS Code (version 1.83.1)
+    • VS Code at /Applications/Visual Studio Code.app/Contents
+    • Flutter extension version 3.50.0
+
+[✓] VS Code (version 1.83.1)
+    • VS Code at /Users/damilolaalimi/Downloads/Visual Studio Code.app/Contents
+    • Flutter extension version 3.50.0
+
+[✓] Connected device (4 available)
+    • sdk gphone64 arm64 (mobile) • emulator-5554             • android-arm64  •
+      Android 14 (API 34) (emulator)
+    • Damilola’s iPhone (mobile)  • 00008110-001964480AE1801E • ios            •
+      iOS 17.0.2 21A351
+    • macOS (desktop)             • macos                     • darwin-arm64   •
+      macOS 14.0 23A344 darwin-arm64
+    • Chrome (web)                • chrome                    • web-javascript •
+      Google Chrome 118.0.5993.117
+
+[!] Network resources
+    ✗ A network error occurred while checking "https://github.com/": Operation
+      timed out
+
+! Doctor found issues in 3 categories.
+``` 
 ```
+[!] Flutter (Channel master, 3.16.0-21.0.pre.42, on macOS 14.0 23A344 darwin-arm64, locale en-NG)
+    • Flutter version 3.16.0-21.0.pre.42 on channel master at /Users/damilolaalimi/fvm/versions/master
+    ! Warning: `flutter` on your path resolves to /Users/damilolaalimi/sdks/flutter/bin/flutter, which is not inside your current Flutter SDK checkout at /Users/damilolaalimi/fvm/versions/master. Consider adding /Users/damilolaalimi/fvm/versions/master/bin to the front of your path.
+    ! Warning: `dart` on your path resolves to /opt/homebrew/Cellar/dart/3.1.5/libexec/bin/dart, which is not inside your current Flutter SDK checkout at /Users/damilolaalimi/fvm/versions/master. Consider adding /Users/damilolaalimi/fvm/versions/master/bin to the front of your path.
+    • Upstream repository https://github.com/flutter/flutter.git
+    • Framework revision f7d1b35dca (3 hours ago), 2023-11-02 03:21:43 -0400
+    • Engine revision 3c1e8f457e
+    • Dart version 3.3.0 (build 3.3.0-87.0.dev)
+    • DevTools version 2.29.0
+    • If those were intentional, you can disregard the above warnings; however it is recommended to use "git" directly to perform update checks and upgrades.
+
+[✓] Android toolchain - develop for Android devices (Android SDK version 34.0.0)
+    • Android SDK at /Users/damilolaalimi/Library/Android/sdk
+    • Platform android-34, build-tools 34.0.0
+    • ANDROID_HOME = /Users/damilolaalimi/Library/Android/sdk
+    • Java binary at: /Applications/Android Studio.app/Contents/jbr/Contents/Home/bin/java
+    • Java version OpenJDK Runtime Environment (build 17.0.6+0-17.0.6b802.4-9586694)
+    • All Android licenses accepted.
+
+[✓] Xcode - develop for iOS and macOS (Xcode 15.0.1)
+    • Xcode at /Applications/Xcode.app/Contents/Developer
+    • Build 15A507
+    • CocoaPods version 1.12.1
+
+[✓] Chrome - develop for the web
+    • Chrome at /Applications/Google Chrome.app/Contents/MacOS/Google Chrome
+
+[✓] Android Studio (version 2022.2)
+    • Android Studio at /Applications/Android Studio.app/Contents
+    • Flutter plugin can be installed from:
+      🔨 https://plugins.jetbrains.com/plugin/9212-flutter
+    • Dart plugin can be installed from:
+      🔨 https://plugins.jetbrains.com/plugin/6351-dart
+    • Java version OpenJDK Runtime Environment (build 17.0.6+0-17.0.6b802.4-9586694)
+
+[!] Android Studio (version unknown)
+    • Android Studio at /Users/damilolaalimi/Downloads/Android Studio Preview.app/Contents
+    • Flutter plugin can be installed from:
+      🔨 https://plugins.jetbrains.com/plugin/9212-flutter
+    • Dart plugin can be installed from:
+      🔨 https://plugins.jetbrains.com/plugin/6351-dart
+    ✗ Unable to determine Android Studio version.
+    • Java version OpenJDK Runtime Environment (build 17.0.7+0-17.0.7b1000.6-10550314)
+
+[✓] VS Code (version 1.83.1)
+    • VS Code at /Applications/Visual Studio Code.app/Contents
+    • Flutter extension version 3.50.0
+
+[✓] VS Code (version 1.83.1)
+    • VS Code at /Users/damilolaalimi/Downloads/Visual Studio Code.app/Contents
+    • Flutter extension version 3.50.0
+
+[✓] Connected device (3 available)
+    • Damilola’s iPhone (mobile) • 00008110-001964480AE1801E • ios            • iOS 17.0.2 21A351
+    • macOS (desktop)            • macos                     • darwin-arm64   • macOS 14.0 23A344 darwin-arm64
+    • Chrome (web)               • chrome                    • web-javascript • Google Chrome 118.0.5993.117
+
+[✓] Network resources
+    • All expected network resources are available.
+
+! Doctor found issues in 2 categories.
+exit code 0
+``` 
+
+</p>
+</details> 
+--
+author:	vashworth
+association:	member
+edited:	false
+status:	none
+--
+Framework team - Is the height of the selection controlled by the framework?
+--
+author:	vashworth
+association:	member
+edited:	false
+status:	none
+--
+@yuhangang Can you file a separate issue for the drag selection issue you describe in Action Results > 2?
+--
+author:	yuhangang
+association:	none
+edited:	true
+status:	none
+--
+@vashworth done, and renamed the current issue
+
+https://github.com/flutter/flutter/issues/137976
+--
+author:	jmagman
+association:	member
+edited:	false
+status:	none
+--
+> Framework team - Is the height of the selection controlled by the framework?
+
+Maybe text-input team knows?
+--
+author:	Renzo-Olivares
+association:	member
+edited:	false
+status:	none
+--
+Hi @yuhangang, the style of the selection height and width is configurable through `SelectableText.selectionHeightStyle` and `SelectableText.selectionWidthStyle`. `TextField` also has these members, but `Text` widgets under a `SelectionArea` do not have these as configurable yet. By default `TextField` and `SelectableText` default these values to [`BoxHeightStyle.tight`](https://api.flutter.dev/flutter/dart-ui/BoxHeightStyle.html) which is the behavior you are experiencing on iOS, but it is strange that this differs from the Android behavior. cc @LongCatIsLooong @justinmc for any insight.
+
+You can achieve a more consistent behavior using `BoxSelectionHeightStyle.max` for the `selectionHeightStyle`, but this does increase the size of the highlight.
+
+https://github.com/flutter/flutter/assets/948037/e2b53aba-3a1d-403c-adbd-fa64319ed52e
+- Running on iOS simulator
+--
+author:	lucky1213
+association:	none
+edited:	true
+status:	none
+--
+@Renzo-Olivares 
+Can the selectionHeightStyle parameter be added to SelectionArea?
+
 --
 author:	flutter-triage-bot
 association:	none
 edited:	false
 status:	none
 --
-This issue is assigned to @LongCatIsLooong but has had no recent status updates. Please consider unassigning this issue if it is not going to be addressed in the near future. This allows people to have a clearer picture of what work is actually planned. Thanks!
---
-author:	flutter-triage-bot
-association:	none
-edited:	false
-status:	none
---
-This issue is assigned to @LongCatIsLooong but has had no recent status updates. Please consider unassigning this issue if it is not going to be addressed in the near future. This allows people to have a clearer picture of what work is actually planned. Thanks!
---
-author:	flutter-triage-bot
-association:	none
-edited:	false
-status:	none
---
-This issue was assigned to @LongCatIsLooong but has had no status updates in a long time. To remove any ambiguity about whether the issue is being worked on, the assignee was removed.
+This issue is assigned to @Renzo-Olivares but has had no recent status updates. Please consider unassigning this issue if it is not going to be addressed in the near future. This allows people to have a clearer picture of what work is actually planned. Thanks!
 --
 
     </comments>
