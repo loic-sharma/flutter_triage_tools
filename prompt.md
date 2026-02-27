@@ -19,684 +19,236 @@ however, Android's backspace virtual key can send a `KeyMessage`.
 </example_output>
 
 <collection>
-  <issue id="181873">
-    <title>Don't duplicate Semantics logic in TextField and CupertinoTextField</title>
+  <issue id="182907">
+    <title>Proposal - TextField for max-length validation, add option to count Unicode code points instead of grapheme clusters</title>
     <body>
-We should move all possible Semantics logic out of the design languages and into EditableText, to be DRY and to make sure that direct users of EditableText can easily get nitty gritty semantics details right.
+### Use case
 
-## Background
+In Zulip, we sometimes want to send a user-provided string to the server, and the server validates the string by counting its Unicode code points. See for example "max_stream_name_length:" in [this Zulip API doc](https://zulip.com/api/register-queue):
 
-Currently, EditableText only includes a Semantics widget for toolbar operations:
+> The maximum allowed length for a channel name, in Unicode code points. Clients should use this property rather than hardcoding field sizes.
 
-https://github.com/flutter/flutter/blob/018a57179c12c7d4ee1fb225b4759d2c05047b20/packages/flutter/lib/src/widgets/editable_text.dart#L5800-L5805
+We'd like a simple way to validate the string client-side before passing it to the server.
 
-Meanwhile [in TextField](https://github.com/flutter/flutter/blob/018a57179c12c7d4ee1fb225b4759d2c05047b20/packages/flutter/lib/src/material/text_field.dart#L1795-L1799) and [in CupertinoTextField](https://github.com/flutter/flutter/blob/018a57179c12c7d4ee1fb225b4759d2c05047b20/packages/flutter/lib/src/cupertino/text_field.dart#L1630-L1632), there is Semantics logic for gestures and focus that is relevant to all users of text input.
 
-## Recommendation
+### Proposal
 
-We should move all possible common semantics logic out of TextField/CupertinoTextField and into EditableText.
+The [`TextField` widget](https://api.flutter.dev/flutter/material/TextField-class.html) has params [`maxLength`](https://api.flutter.dev/flutter/material/TextField/maxLength.html) and [`maxLengthEnforcement`](https://api.flutter.dev/flutter/material/TextField/maxLengthEnforcement.html). Those work by counting Unicode _grapheme clusters_, not code points, so if we want to perfectly match the client-side validation/enforcement to the server, we can't use those.
 
-As a part of that PR, we should also move the test mentioned in https://github.com/flutter/flutter/pull/181722/files#r2760694144 back to the Widgets library, since it tests this semantics logic.
-
-## Resources
-
-This came up in: https://github.com/flutter/flutter/pull/181722/files#r2760694144
+I propose adding another optional param to `TextField` that configures whether `maxLength` is interpreted as grapheme clusters, which will remain the default behavior, or as code points.
     </body>
     <comments>
-
-    </comments>
-  </issue>
-  <issue id="181682">
-    <title>Add a Cupertino version of SelectableText</title>
-    <body>
-While looking to fix up the last Cupertino test (test/cupertino/text_selection_test.dart) in https://github.com/flutter/flutter/pull/181634  that had a cross import to Material, I ended up being blocked, because that test uses `SelectableText.rich` and there is no Cupertino equivalent of SelectableText yet.
-
-We probably need a Cupertino version of this, to fix that test.
-
-Part of https://github.com/flutter/flutter/issues/177415
-
-cc @justinmc We can probably remove the Cupertino tests from the umbrella issue once https://github.com/flutter/flutter/pull/181634 lands, and replace it with this issue instead, since that is the only remaining point?
-    </body>
-    <comments>
-
-    </comments>
-  </issue>
-  <issue id="181532">
-    <title>Widgetspan in not correctly aligned with other TextSpan inside Text.rich</title>
-    <body>
-### Steps to reproduce
-
-1. Run code below on [Dart Pad](https://dartpad.dev/)
-2. Change size of the window like in the video attached.
-
-### Expected results
-
-The texts AAA, BBB and CCC must be drawn consecutively without any strange line breaks.
-
-### Actual results
-
-After reducing window size, a strange line appear between AAA and BBB parts.
-
-It seems like the WidgetSpan act like a single rectangle and because of that the TextSpan around cannot align correctly.
-It could be interesting to have a solution (maybe it exist ?) to have a "multiline WidgetSpan with pixel perfect hit box".
-
-My goal is to achieve something like bellow. I would like to put a custom border around a specific text : 
-
-<img width="1317" height="210" alt="Image" src="https://github.com/user-attachments/assets/200bc826-7777-4180-ab94-fd995a272ae2" />
-
-### Code sample
-
-<details open><summary>Code sample</summary>
-
-This example is small to hide all useless decoration added to the WidgetSpan in my app.
-
-```dart
-import 'package:flutter/material.dart';
-
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: Scaffold(
-        body: Center(
-          child: const Text.rich(
-            TextSpan(
-              children: [
-                TextSpan(text: 'AAA AAA AAA AAA '),
-                WidgetSpan(
-                  child: Text(
-                    'BBB BBB BBB BBB BBB BBB BBB BBB BBB BBB BBB BBB BBB BBB BBB BBB BBB BBB BBB BBB BBB BBB BBB BBB ',
-                  ),
-                ),
-                TextSpan(text: ' CCC CCC CCC CCC'),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-```
-
-</details>
-
-
-### Screenshots or Video
-
-<details open>
-<summary>Screenshots / Video demonstration</summary>
-
-Alignement broken : 
-
-https://github.com/user-attachments/assets/6fa49351-cf2c-48de-a659-4aacd468aa79
-
-Shape is rectangular : 
-<img width="636" height="99" alt="Image" src="https://github.com/user-attachments/assets/16505e9c-14fd-417e-b06d-f8e1e7927997" />
-
-</details>
-
-
-### Logs
-
-<details open><summary>Logs</summary>
-
-```console
-```
-
-</details>
-
-
-### Flutter Doctor output
-
-<details open><summary>Doctor output</summary>
-
-```console
-[✓] Flutter (Channel stable, 3.29.3, on macOS 26.2 25C56 darwin-arm64, locale fr-FR) [2,0s]
-    • Flutter version 3.29.3 on channel stable at /Users/earminjon/fvm/versions/3.29.3
-    • Upstream repository https://github.com/flutter/flutter.git
-    • Framework revision ea121f8859 (10 months ago), 2025-04-11 19:10:07 +0000
-    • Engine revision cf56914b32
-    • Dart version 3.7.2
-    • DevTools version 2.42.3
-
-[✓] Chrome - develop for the web [90ms]
-    • Chrome at /Applications/Google Chrome.app/Contents/MacOS/Google Chrome
-
-[✓] IntelliJ IDEA Ultimate Edition (version 2025.3.2) [88ms]
-    • IntelliJ at /Users/earminjon/Applications/IntelliJ IDEA.app
-    • Flutter plugin version 89.0.0
-    • Dart plugin version 502.0.0
-
-[✓] Connected device (3 available) [6,7s]
-    • macOS (desktop)                 • macos                 • darwin-arm64   • macOS 26.2 25C56 darwin-arm64
-    • Mac Designed for iPad (desktop) • mac-designed-for-ipad • darwin         • macOS 26.2 25C56 darwin-arm64
-    • Chrome (web)                    • chrome                • web-javascript • Google Chrome 143.0.7499.193
-
-[✓] Network resources [260ms]
-    • All expected network resources are available.
-```
-
-</details>
-
-    </body>
-    <comments>
-author:	darshankawar
-association:	member
-edited:	false
-status:	none
---
-Replicable with latest stable and master versions, although this doesn't seem to be specific to web, as on desktop, it appears to replicate as well.
-
---
-author:	flutter-triage-bot
-association:	none
-edited:	false
-status:	none
---
-The `fyi-text-input` label is redundant with the `team-text-input` label.
---
-
-    </comments>
-  </issue>
-  <issue id="181474">
-    <title>[iPadOS]Keyboard is dismissed, but the TextField keeps focus, causing subsequent taps not to trigger keyboard presentation.</title>
-    <body>
-### Steps to reproduce
-
-1. With ipados 26.2. 
-2. Set `keyboardType` into `TextInputType.number`.
-3. Tap the `TextField` widget.
-4. Tap outside. And you can see the 「floated small number keypad」 is dismissed, BUT the `TextField` keeps focus.
-5. Now you tap the `TextField` again, the number keypad will not show again anymore.
-
-
-### Expected results
-
-Tap TextField widget, show keyboard. 
-Tap outside, hide keyboard and unfocus.
-Tap TextField widget Again, show keyboard again.
-...
-
-### Actual results
-
-keyboard dont show again.
-
-### Code sample
-
-<details open><summary>Code sample</summary>
-
-```dart
-[Paste your code here]
-```
-
-</details>
-
-
-### Screenshots or Video
-
-<details open>
-<summary>Screenshots / Video demonstration</summary>
-
-[Upload media here]
-
-https://github.com/user-attachments/assets/75a094ef-91f1-471a-b436-44e258107d93
-
-</details>
-
-
-### Logs
-
-<details open><summary>Logs</summary>
-
-```console
-[Paste your logs here]
-```
-
-</details>
-
-
-### Flutter Doctor output
-
-<details open><summary>Doctor output</summary>
-
-```console
-[✓] Flutter (Channel stable, 3.38.1, on macOS 26.2 25C56 darwin-arm64,
-    locale zh-Hans-CN) [1,713ms]
-    • Flutter version 3.38.1 on channel stable at
-      /Users/EsPsl/fvm/versions/3.38.1
-    • Upstream repository https://github.com/flutter/flutter.git
-    • Framework revision b45fa18946 (2 months ago), 2025-11-12 22:09:06
-      -0600
-    • Engine revision b5990e5ccc
-    • Dart version 3.10.0
-    • DevTools version 2.51.1
-    • Feature flags: enable-web, enable-linux-desktop,
-      enable-macos-desktop, enable-windows-desktop, enable-android,
-      enable-ios, cli-animations, enable-native-assets,
-      omit-legacy-version-file, enable-lldb-debugging,
-      enable-uiscene-migration
-
-[✓] Android toolchain - develop for Android devices (Android SDK version
-    36.1.0-rc1) [4.2s]
-    • Android SDK at /Volumes/ExternalSSD/DevEnv/AndroidSdk
-    • Emulator version 36.1.9.0 (build_id 13823996) (CL:N/A)
-    • Platform android-36, build-tools 36.1.0-rc1
-    • Java binary at: /Applications/Android
-      Studio.app/Contents/jbr/Contents/Home/bin/java
-      This is the JDK bundled with the latest Android Studio installation
-      on this machine.
-      To manually set the JDK path, use: `flutter config
-      --jdk-dir="path/to/jdk"`.
-    • Java version OpenJDK Runtime Environment (build
-      21.0.7+-13880790-b1038.58)
-    • All Android licenses accepted.
-
-[✓] Xcode - develop for iOS and macOS (Xcode 26.1.1) [3.9s]
-    • Xcode at /Applications/Xcode.app/Contents/Developer
-    • Build 17B100
-    • CocoaPods version 1.16.2
-
-[✓] Chrome - develop for the web [7ms]
-    • Chrome at /Applications/Google Chrome.app/Contents/MacOS/Google
-      Chrome
-
-[✓] Connected device (6 available) [10.3s]
-    • Psl (wireless) (mobile)      ...
-
-[!] Network resources [75.1s]           
-    ✗ A network error occurred while checking
-      "https://maven.google.com/": Operation timed out
-
-! Doctor found issues in 1 category.
-```
-
-</details>
-
-    </body>
-    <comments>
-author:	Crazymuyang
-association:	none
-edited:	false
-status:	none
---
-New trouble.
-If you use a M chip iPad and tap a TextField widget set with `TextInputType.number`, the keyboard is hard to appear.
---
-author:	LongCatIsLooong
-association:	member
-edited:	false
-status:	none
---
-It looks like the "floating" number pad doesn't show up on an iPhone and even on iPadOS if only showed up when I made the text field in my test app smaller (narrower so it doesn't take up the full screen width). 
-
-@Crazymuyang are you experiencing the same problem with UIKit text fields on iPadOS?
-
---
-author:	Crazymuyang
-association:	none
-edited:	false
-status:	none
---
-> It looks like the "floating" number pad doesn't show up on an iPhone and even on iPadOS if only showed up when I made the text field in my test app smaller (narrower so it doesn't take up the full screen width).
-> 
-> [@Crazymuyang](https://github.com/Crazymuyang) are you experiencing the same problem with UIKit text fields on iPadOS?
-
-I have not test with UIKit.
-And you mean the problem is occured when the TextField is too small?
---
-author:	LongCatIsLooong
-association:	member
-edited:	false
-status:	none
---
-> > It looks like the "floating" number pad doesn't show up on an iPhone and even on iPadOS if only showed up when I made the text field in my test app smaller (narrower so it doesn't take up the full screen width).
-> > [@Crazymuyang](https://github.com/Crazymuyang) are you experiencing the same problem with UIKit text fields on iPadOS?
-> 
-> I have not test with UIKit. And you mean the problem is occured when the TextField is too small?
-
-No the new floating numpad sometimes doesn't show up, I was just documenting in case someone else wants to repro.
---
-
-    </comments>
-  </issue>
-  <issue id="180484">
-    <title>[Android] `MediaQuery.viewInsetOf(context).bottom` discontinuity when opening the keyboard</title>
-    <body>
-### Steps to reproduce
-
-- Create an app and align a fixed height container to the bottom of the safe area and add a textfield
-- Run the app and tap into the text field
-- Notice that as the keyboard opens there's a jump at the end of the animation
-
-### Expected results
-
-- There's no jump in the animation
-
-### Actual results
-
-- There's a jump in the animation
-
-### Code sample
-
-<details open><summary>Flutter Code sample</summary>
-
-```dart
-import 'package:flutter/material.dart';
-
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(debugShowCheckedModeBanner: false, home: MainScreen());
-  }
-}
-
-class MainScreen extends StatelessWidget {
-  const MainScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      resizeToAvoidBottomInset: true,
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: TextField(
-                decoration: const InputDecoration(hintText: 'Enter text here', border: OutlineInputBorder()),
-              ),
-            ),
-
-            const Spacer(),
-
-            const Text('Flutter Example', textAlign: TextAlign.center),
-
-            const Spacer(),
-
-            Container(width: double.infinity, height: 60, color: Colors.red),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-```
-
-</details>
-
-<details open><summary>Android Code sample</summary>
-
-```kotlin
-package com.example.text_example
-
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import com.example.text_example.ui.theme.Text_exampleTheme
-
-class MainActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContent {
-            Text_exampleTheme {
-              MainScreen()
-            }
-        }
-    }
-}
-
-@Composable
-fun MainScreen(modifier: Modifier = Modifier) {
-    var textFieldValue by remember { mutableStateOf("") }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Top))
-            .imePadding()
-            .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Bottom)),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        // TextField at the top
-        TextField(
-            value = textFieldValue,
-            onValueChange = { textFieldValue = it },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            placeholder = { Text("Enter text here") }
-        )
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        Text("Native Android Example", textAlign = TextAlign.Center)
-
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        // Red rectangle at the bottom
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(60.dp)
-                .background(Color.Red)
-        )
-    }
-}
-
-```
-
-</details>
-
-
-### Screenshots or Video
-
-<details open>
-<summary>Screenshots / Video demonstration</summary>
-
-https://github.com/user-attachments/assets/681a46ae-5cb6-4b9a-a691-2c4c1cff2152
-
-https://github.com/user-attachments/assets/d678f871-8b9f-46b0-9f2f-f4d1e9828260
-
-</details>
-
-### Details
-
-I've attached two implementations (Flutter, Native) and two video captures to compare on the same device.
-- The Android implementation has no jump
-- The Flutter implementation has a jump the end of the animation
-
-I've also logged `MediaQuery.viewInsetOf(context).bottom` and the values look like this:
-```
-I/flutter (32244): Bottom inset: 46.857142857142854
-I/flutter (32244): Bottom inset: 194.28571428571428
-I/flutter (32244): Bottom inset: 252.95238095238096
-I/flutter (32244): Bottom inset: 274.6666666666667
-I/flutter (32244): Bottom inset: 288.0
-I/flutter (32244): Bottom inset: 296.0
-I/flutter (32244): Bottom inset: 299.42857142857144
-I/ImeTracker(32244): com.example.text_example:8f09955a: onShown
-I/flutter (32244): Bottom inset: 324.1904761904762
-```
-Notice that after `288.0`, `296.0`, a jump occurs to `324.1904761904762`.
-The 24 point jump also seems to be highly related to the height of the home indicator visible on the bottom when the keyboard is closed.
-
-
-### System
-Nothing OS 3.2
-Nothing Phone 1
-Android version 15
-
-
-### Flutter Doctor output
-
-<details open><summary>Doctor output</summary>
-
-```console
-[✓] Flutter (Channel stable, 3.38.5, on macOS 15.7.1 24G231 darwin-arm64, locale en-US) [450ms]
-    • Flutter version 3.38.5 on channel stable at /Users/rumori/fvm/versions/3.35.6
-    • Upstream repository https://github.com/flutter/flutter.git
-    • Framework revision f6ff1529fd (3 weeks ago), 2025-12-11 11:50:07 -0500
-    • Engine revision 1527ae0ec5
-    • Dart version 3.10.4
-    • DevTools version 2.51.1
-    • Feature flags: enable-web, enable-linux-desktop, enable-macos-desktop, enable-windows-desktop, enable-android, enable-ios, cli-animations, enable-native-assets,
-      omit-legacy-version-file, enable-lldb-debugging
-
-[✓] Android toolchain - develop for Android devices (Android SDK version 35.0.0) [1,770ms]
-    • Android SDK at /Users/rumori/Library/Android/sdk
-    • Emulator version 36.1.9.0 (build_id 13823996) (CL:N/A)
-    • Platform android-36, build-tools 35.0.0
-    • Java binary at: /Applications/Android Studio.app/Contents/jbr/Contents/Home/bin/java
-      This is the JDK bundled with the latest Android Studio installation on this machine.
-      To manually set the JDK path, use: `flutter config --jdk-dir="path/to/jdk"`.
-    • Java version OpenJDK Runtime Environment (build 21.0.7+-13880790-b1038.58)
-    • All Android licenses accepted.
-
-[✓] Xcode - develop for iOS and macOS (Xcode 26.1) [1,043ms]
-    • Xcode at /Applications/Xcode26.1.app/Contents/Developer
-    • Build 17B55
-    • CocoaPods version 1.16.2
-
-[✓] Chrome - develop for the web [6ms]
-    • Chrome at /Applications/Google Chrome.app/Contents/MacOS/Google Chrome
-
-[✓] Connected device (5 available) [6.3s]
-(redacted)
-[✓] Network resources [667ms]
-    • All expected network resources are available.
-
-• No issues found!
-```
-
-</details>
-
-    </body>
-    <comments>
-author:	PurplePolyhedron
-association:	contributor
-edited:	true
-status:	none
---
-Have you tried the code in profile or release mode? I have experienced lag when opening the keyboard in Android debug mode.
---
-author:	intonarumori
-association:	none
-edited:	false
-status:	none
---
-Yes, I tested in release mode and it's the same result, pretty noticeable. The native version is smooth as butter.
---
-author:	tirth-patel-nc
-association:	member
-edited:	false
-status:	none
---
-thanks for the report. Appears to be a duplicate of #19480 #167374 #116836. If you disagree write in comments and I'll reopen the issue.
---
-author:	intonarumori
-association:	none
-edited:	false
-status:	none
---
-I've looked at those issues, I think they are related, but not duplicates.
---
-author:	intonarumori
-association:	none
-edited:	false
-status:	none
---
-@tirth-patel-nc This issue is related to the ones you posted, but not a straight duplicate, please reopen.
---
-author:	tirth-patel-nc
-association:	member
-edited:	false
-status:	none
---
-Thanks for the report. Seeing the same behaviour with latest SDK versions.
-
-```
-stable : 3.38.6
-master : 3.40.0-1.0.pre-494
-```
---
-author:	HE-LU
-association:	none
-edited:	false
-status:	none
---
-@intonarumori I can confirm that I’m seeing the same issue on my end. I tested both the stable release (3.38.6) and master, and the behavior is consistent.
-
-I also noticed an additional, less obvious behavior. As shown in your video, when the keyboard opens, the red bar becomes slightly cropped. I can reproduce this as well.
-
-Additionally, when this happens very quickly—for example, when unfocusing on click and rapidly focusing/unfocusing the input, causing the software keyboard to open and close in quick succession—the behavior changes slightly. Instead of cropping the red bar, an empty space is added below it, shifting the entire bar slightly upward above the keyboard. This then settles once the keyboard is fully visible.
-
-Could you please check whether you observe the same behavior during rapid keyboard show/hide cycles?
---
 author:	loic-sharma
 association:	member
 edited:	true
 status:	none
 --
-@intonarumori Could you expand on how this issue is different than https://github.com/flutter/flutter/issues/116836?
+@chrisbobbe Did you consider making a custom text input formatter (see [`TextInputFormatter`](https://api.flutter.dev/flutter/services/TextInputFormatter-class.html))?
 
-It looks like these issues have similar root causes, I suspect we should mark this one as a duplicate and copy your findings to that issue.
+Here's a prototype by Gemini:
+
+```dart
+import 'package:flutter/services.dart';
+
+class CodePointLengthLimitingFormatter extends TextInputFormatter {
+  const CodePointLengthLimitingFormatter({required this.maxCodePoints});
+
+  final int maxCodePoints;
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    // Runes represent the Unicode code points of the string
+    if (newValue.text.runes.length > maxCodePoints) {
+      // If we exceed the limit, we revert to the old value
+      // or truncate the new one. Reverting is safer for cursor position.
+      return oldValue;
+    }
+    return newValue;
+  }
+}
+```
+
+```dart
+TextField(
+  decoration: InputDecoration(
+    labelText: 'Enter up to 5 code points',
+    hintText: 'Try emojis!',
+  ),
+  inputFormatters: [
+    CodePointLengthLimitingFormatter(maxCodePoints: 5),
+  ],
+)
+```
+
+I would recommend referring to [`LengthLimitingTextInputFormatter`](https://github.com/flutter/flutter/blob/a7a950aea089d638bdaf6ea9d0ade91f819b3a7b/packages/flutter/lib/src/services/text_formatter.dart#L445) for a thorough implementation which adapts to different platforms and also takes text composition into account.
+
+Kudos to @LongCatIsLooong for the suggestion during text input triage
+--
+author:	loic-sharma
+association:	member
+edited:	false
+status:	none
+--
+Ah I missed the discussion in the linked PR. I added a comment there: https://github.com/flutter/flutter/pull/182920#issuecomment-3974195223
+
+> ...
+> This is a reasonable feature, but it seems rather uncommon. Every feature we add to `TextField` directly increases its complexity, and `TextField` is already very complex.
+> 
+> Instead of adding this feature directly to `TextField`, I'd prefer that `TextField` provides the necessary foundations that let you build this feature on top of `TextField` using composition. Since a custom `TextInputFormatter` should let you add code point limits (see [#182907 (comment)](https://github.com/flutter/flutter/issues/182907#issuecomment-3974082231) for an example prototype), I lean towards not adding this feature.
+> ...
+--
+author:	chrisbobbe
+association:	contributor
+edited:	true
+status:	none
+--
+Interesting; yes, that should work re: enforcement.
+
+The other piece of functionality controlled by `maxLength` is the "counter" showing current / maximum character counts. I see multiple other ways to control that:
+
+- [`TextField.buildCounter`](https://api.flutter.dev/flutter/material/TextField/buildCounter.html)
+- [`InputDecoration.counter`](https://api.flutter.dev/flutter/material/InputDecoration/counter.html)
+- [`InputDecoration.counterText`](https://api.flutter.dev/flutter/material/InputDecoration/counterText.html) / [`InputDecoration.counterStyle`](https://api.flutter.dev/flutter/material/InputDecoration/counterStyle.html)
+
+and I was able to make it show accurate numbers by using the field's `TextEditingController`, which isn't totally ergonomic but it worked:
+
+```dart
+      buildCounter: (context, {
+        required currentLength,
+        required maxLength,
+        required isFocused,
+      }) => Text('${controller.text.runes.length}/$maxLengthCodePoints'),
+```
+
+(That solution feels simpler than the `InputDecoration` controls; I think I'd need to involve a stateful widget and a listener on the `TextEditingController` to make live-updating work with those.)
+
+So I think I'm all set, and this can be closed as not planned. Thanks for considering!
 --
 
     </comments>
   </issue>
-  <issue id="137817">
-    <title>IOS Emoji Selection is Higher than English Character</title>
+  <issue id="182876">
+    <title>External voice dictation tools (e.g. Typeless, Windows Voice Typing) cannot detect Flutter TextFields via UIA at least in [Windows]</title>
     <body>
-### Is there an existing issue for this?
-
-- [X] I have searched the [existing issues](https://github.com/flutter/flutter/issues)
-- [X] I have read the [guide to filing a bug](https://flutter.dev/docs/resources/bug-reports)
-
 ### Steps to reproduce
 
-1. On IOS device (IOS 17, Iphone 15 Pro simulator), select text with emojis on `SelectableText`, `SelectionArea` containing `Text` widget.
+1. Install an external voice dictation tool (tested with [Typeless](https://typeless.com/) and a Whisper-based tool).
+2. Run a Flutter desktop app with a standard `TextField`.
+3. Focus the `TextField`, activate dictation, and speak.
+4. The tool **cannot detect the TextField** and fails to inject text.
 
 ### Expected results
 
-1. On Android device, height of highlighted area of emojis is same with english character, expecting same behaviour on IOS devices.
-![image](https://github.com/flutter/flutter/assets/70849672/71cb609e-ad09-4574-83e6-4a6c8917eb3d)
+The dictation tool should detect the focused `TextField` via Windows UI Automation (UIA) and inject text directly — as it does with native Win32, WPF, UWP, Electron, and other desktop frameworks.
 
 ### Actual results
 
-1. On IOS device, highlighted area of emojis is higher than english character
-![image](https://github.com/flutter/flutter/assets/70849672/8a96736e-bc14-4d22-a876-d35a033727e8)
+The dictation tool **cannot locate any editable text control** in the Flutter window via UIA.
 
+- **Typeless** falls back to a "Copy last transcription" popup — it found the window but no injectable text field.
+- **Whisper-based tools** similarly fail to inject into the focused field.
+
+Windows built-in Voice Typing (`Win+H`) and Voice Access likely have the same problem, since they rely on the same UIA / TSF infrastructure.
+
+
+### Root cause analysis
+
+Two main gaps were identified:
+
+**1. UIA text-editing patterns not properly exposed**
+
+External tools find text fields by querying UIA for `IValueProvider` (`SetValue()`) or `ITextProvider`. Flutter's `AXPlatformNodeWin` (from Chromium) implements `IRawElementProviderFragment` and some UIA patterns, but `FlutterPlatformNodeDelegate` doesn't seem to correctly expose them for `TextField` widgets. The `ITextProvider` / `StringSearch` implementation is also known incomplete (#117013).
+
+**2. No TSF — still on legacy IMM32**
+
+Flutter's Windows embedder uses **IMM32** for IME support (`text_input_manager.cc`), not **TSF (Text Services Framework)**. TSF is how modern Windows routes speech recognition, handwriting, and keyboard input via `ITextStoreACP`. Without a TSF text store, any input going through TSF (including `Win+H`) has nowhere to write. Microsoft has [stated](https://learn.microsoft.com/en-us/windows/apps/develop/input/input-method-editor-requirements) that IMM32 is being deprecated.
+
+Additionally, when a dictation tool shows an overlay, it can steal focus from the Flutter window — and Flutter's text input pipeline depends on window focus to receive `WM_*` messages, so even clipboard-based fallback injection may break.
+
+### Related issues
+
+- #117013 — Incomplete `StringSearch` for `AXPlatformNodeTextRangeProviderWin`
+- #181313 — IME activated when no TextField has focus
+- #36057 / #176403 — Touch/virtual keyboard issues in tablet mode (same underlying infrastructure)
+
+### Suggested fix
+
+1. **Fix UIA pattern exposure** — Make `FlutterPlatformNodeDelegate` properly expose `IValueProvider` (with working `SetValue`) and `ITextEditProvider` for text fields. This alone would fix tools like Typeless that inject via UIA.
+
+2. **Migrate to TSF** — Implement `ITextStoreACP` to replace IMM32-based text input. This would fix `Win+H`, Fluid Dictation, and all TSF-based input methods, and is also the proper fix for the touch keyboard issues (#36057 / #176403).
+
+### Current workaround
+
+As an app-level workaround, a **clipboard bridge** works: monitor `WM_CLIPBOARDUPDATE` and auto-insert clipboard content into the focused `TextField` when updated by an external process. This covers tools like Typeless that fall back to clipboard, but it's a hack — not a substitute for proper UIA/TSF support.
+
+### Environment
+
+```
+[✓] Flutter (Channel stable, 3.38.3, on Microsoft Windows [Version 10.0.19045.6466], locale zh-CN)
+    • Flutter version 3.38.3 on channel stable
+    • Framework revision 19074d12f7 (2025-11-20)
+    • Engine revision 13e658725d
+    • Dart version 3.10.1
+    • DevTools version 2.51.1
+
+[✓] Windows Version (10 Pro 64-bit, 22H2, 2009)
+
+[✓] Visual Studio - develop Windows apps (Visual Studio Community 2022 17.14.16)
+    • Windows 10 SDK version 10.0.26100.0
+```
+
+    </body>
+    <comments>
+author:	mbcorona
+association:	member
+edited:	false
+status:	none
+--
+Hi @dbsxdbsx , thanks for reporting, labeling team-engine for review of this issue.
+--
+
+    </comments>
+  </issue>
+  <issue id="181907">
+    <title>[Windows] Shift key randomly gets stuck in a "pressed down" state forever when using TextFields</title>
+    <body>
+### Steps to reproduce
+
+The problem is that sometimes, when editing text inside a TextField using the Shift key, the Flutter app will keep the Shift key stuck in a "pressed down" state forever.
+
+It happens quite randomly, but generally what seems to trigger the problem is this: 
+1. Focus on a TextField widget and write something
+2. Use the Shift key, maybe combined with the arrow keys as well (press Shift and select some text with the arrow keys, or press Shift and click with your mouse somewhere within the TextField, ...). Also try to unfocus the whole application (click on your desktop, other app, etc), then re-focus the Flutter app
+3. At some point you will notice that the Shift key is logically stuck in a "pressed down" state forever inside the Flutter app. You cannot deactivate/unpress it, no matter what
+
+This issue seems to be related to these
+- https://github.com/flutter/flutter/issues/115066
+- https://github.com/flutter/flutter/issues/75675
+
+but it seems the problem is still here in Flutter v3.32.8.
+
+Here are some signs to notice when this problem starts to happen:
+- when you edit some text inside a TextField, parts of the text are automatically selected (without you pressing the Shift key) -> you can see this happening in the video
+- you cannot scroll vertical scroll views with your mouse wheel anymore because the Shift key is stuck in the down state, so you can only scroll horizontally now
+- focus groups will now focus backwards (i.e. when you press the Tab key to move to the next focus, the app will actually focus the previous focusable element) -> you can see this happening in the video
+
+### Expected results
+
+Expected = I can use the Shift key normally
+
+### Actual results
+
+Actual = The Shift key is stuck in a "pressed down" state forever, and you have to restart the app to "fix it", but it will happen again at some point
 
 ### Code sample
 
-<details><summary>Code sample</summary>
+<details open><summary>Code sample</summary>
+
+I can't paste the actual code from the video, but the widgets are literally just two TextFields with a border and nothing else.
+Any TextField will do.
 
 ```dart
 import 'package:flutter/material.dart';
@@ -711,65 +263,16 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Text Selection Demo',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
+      home: Scaffold(
+        body: Container(
+          alignment: Alignment.center,
+          padding: const EdgeInsets.all(16),
+          child: const TextField(),
+        ),
       ),
-      home: const MyHomePage(title: 'Flutter Text Selection Demo'),
     );
   }
 }
-
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-        appBar: AppBar(
-          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-          title: Text(widget.title),
-        ),
-        body: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const SizedBox(
-                height: 16,
-              ),
-              const Text(
-                'SelectableText',
-              ),
-              const SelectableText(
-                'Hello, world! 😀 good!',
-                style: TextStyle(
-                  fontSize: 20,
-                ),
-              ),
-              const SizedBox(
-                height: 40,
-              ),
-              const Text('SelectionArea containing Text'),
-              const SelectionArea(
-                child: Text(
-                  'Hello, world!😀 good!',
-                  style: TextStyle(fontSize: 20),
-                ),
-              ),
-            ],
-          ),
-        ));
-  }
-}
-
 ```
 
 </details>
@@ -777,273 +280,84 @@ class _MyHomePageState extends State<MyHomePage> {
 
 ### Screenshots or Video
 
-<details>
+<details open>
 <summary>Screenshots / Video demonstration</summary>
 
-[Upload media here]
+https://github.com/user-attachments/assets/4c9dfa8b-b40f-49b8-96b3-99c4ea819377
 
 </details>
 
 
 ### Logs
 
-<details><summary>Logs</summary>
-
-```console
-[Paste your logs here]
-```
-
-</details>
-
+_No response_
 
 ### Flutter Doctor output
 
-<details><summary>Doctor output</summary>
+<details open><summary>Doctor output</summary>
 
 ```console
-[✓] Flutter (Channel stable, 3.13.9, on macOS 14.1 23B74 darwin-x64, locale en-GB)
-[!] Android toolchain - develop for Android devices (Android SDK version 33.0.2)
-    ✗ cmdline-tools component is missing
-      Run `path/to/sdkmanager --install "cmdline-tools;latest"`
-      See https://developer.android.com/studio/command-line for more details.
-    ✗ Android license status unknown.
-      Run `flutter doctor --android-licenses` to accept the SDK licenses.
-      See https://flutter.dev/docs/get-started/install/macos#android-setup for more details.
-[!] Xcode - develop for iOS and macOS (Xcode 15.0.1)
-    ✗ CocoaPods installed but not working.
-        You appear to have CocoaPods installed but it is not working.
-        This can happen if the version of Ruby that CocoaPods was installed with is different from the one being used to invoke it.
-        This can usually be fixed by re-installing CocoaPods.
-      To re-install see https://guides.cocoapods.org/using/getting-started.html#installation for instructions.
-[✓] Android Studio (version 2022.3)
-[✓] VS Code (version 1.83.1)
-[✓] Connected device (2 available)
-[✓] Network resources
+$ flutter doctor -v
+[✓] Flutter (Channel stable, 3.32.8, on Microsoft Windows [Version 10.0.22631.6199], locale en-001) [407ms]
+    • Flutter version 3.32.8 on channel stable at C:\Users\ady_f\fvm\versions\3.32.8
+    • Upstream repository https://github.com/flutter/flutter.git
+    • Framework revision edada7c56e (6 months ago), 2025-07-25 14:08:03 +0000
+    • Engine revision ef0cd00091
+    • Dart version 3.8.1
+    • DevTools version 2.45.1
 
+[✓] Windows Version (11 Home 64-bit, 23H2, 2009) [2.7s]
+
+[✓] Android toolchain - develop for Android devices (Android SDK version 36.0.0) [1,828ms]
+    • Android SDK at D:\Software\dev\android-sdk
+    • Platform android-36, build-tools 36.0.0
+    • Java binary at: C:\Program Files\OpenJDK\jdk-18.0.2\bin\java
+      This JDK is specified in your Flutter configuration.
+      To change the current JDK, run: `flutter config --jdk-dir="path/to/jdk"`.
+    • Java version OpenJDK Runtime Environment (build 18.0.2+9-61)
+    • All Android licenses accepted.
+
+[✓] Chrome - develop for the web [100ms]
+    • Chrome at C:\Program Files\Google\Chrome\Application\chrome.exe
+
+[✓] Visual Studio - develop Windows apps (Visual Studio Community 2019 16.11.18) [99ms]
+    • Visual Studio at C:\Program Files (x86)\Microsoft Visual Studio\2019\Community
+    • Visual Studio Community 2019 version 16.11.32802.440
+    • Windows 10 SDK version 10.0.19041.0
+
+[✓] Android Studio (version 2025.1.4) [28ms]
+    • Android Studio at C:\Program Files\Android\Android Studio
+    • Flutter plugin can be installed from:
+      🔨 https://plugins.jetbrains.com/plugin/9212-flutter
+    • Dart plugin can be installed from:
+      🔨 https://plugins.jetbrains.com/plugin/6351-dart
+    • Java version OpenJDK Runtime Environment (build 21.0.8+-14018985-b1038.68)
+
+[✓] VS Code, 64-bit edition (version 1.102.2) [26ms]
+    • VS Code at C:\Program Files\Microsoft VS Code
+    • Flutter extension version 3.128.0
+
+[✓] Connected device (3 available) [221ms]
+    • Windows (desktop) • windows • windows-x64    • Microsoft Windows [Version 10.0.22631.6199]
+    • Chrome (web)      • chrome  • web-javascript • Google Chrome 144.0.7559.110
+    • Edge (web)        • edge    • web-javascript • Microsoft Edge 144.0.3719.92
+
+[✓] Network resources [359ms]
+    • All expected network resources are available.
+
+• No issues found!
 ```
 
 </details>
 
     </body>
     <comments>
-author:	dam-ease
+author:	saurabh-mirajkar
 association:	member
 edited:	false
 status:	none
 --
-Hi @yuhangang. Thanks for filing this.
-I can reproduce both issues on the latest `master` and `stable` channels following the steps highlighted above. This isn't peculiar either iOS 17 or Impeller, as I can reproduce on other iOS versions both with and without Impeller.
-
-
-<details><summary>stable, master flutter doctor -v</summary>
-<p>
-
-```
-[!] Flutter (Channel stable, 3.13.9, on macOS 14.0 23A344 darwin-arm64, locale
-    en-NG)
-    • Flutter version 3.13.9 on channel stable at
-      /Users/damilolaalimi/sdks/flutter
-    ! Warning: `dart` on your path resolves to
-      /opt/homebrew/Cellar/dart/3.1.5/libexec/bin/dart, which is not inside your      current Flutter SDK checkout at /Users/damilolaalimi/sdks/flutter.
-      Consider adding /Users/damilolaalimi/sdks/flutter/bin to the front of your      path.
-    • Upstream repository https://github.com/flutter/flutter.git
-    • Framework revision d211f42860 (8 days ago), 2023-10-25 13:42:25 -0700
-    • Engine revision 0545f8705d
-    • Dart version 3.1.5
-    • DevTools version 2.25.0
-    • If those were intentional, you can disregard the above warnings; however
-      it is recommended to use "git" directly to perform update checks and
-      upgrades.
-
-[✓] Android toolchain - develop for Android devices (Android SDK version 34.0.0)
-    • Android SDK at /Users/damilolaalimi/Library/Android/sdk
-    • Platform android-34, build-tools 34.0.0
-    • ANDROID_HOME = /Users/damilolaalimi/Library/Android/sdk
-    • Java binary at: /Applications/Android
-      Studio.app/Contents/jbr/Contents/Home/bin/java
-    • Java version OpenJDK Runtime Environment (build
-      17.0.6+0-17.0.6b802.4-9586694)
-    • All Android licenses accepted.
-
-[✓] Xcode - develop for iOS and macOS (Xcode 15.0.1)
-    • Xcode at /Applications/Xcode.app/Contents/Developer
-    • Build 15A507
-    • CocoaPods version 1.12.1
-
-[✓] Chrome - develop for the web
-    • Chrome at /Applications/Google Chrome.app/Contents/MacOS/Google Chrome
-
-[✓] Android Studio (version 2022.2)
-    • Android Studio at /Applications/Android Studio.app/Contents
-    • Flutter plugin can be installed from:
-      🔨 https://plugins.jetbrains.com/plugin/9212-flutter
-    • Dart plugin can be installed from:
-      🔨 https://plugins.jetbrains.com/plugin/6351-dart
-    • Java version OpenJDK Runtime Environment (build
-      17.0.6+0-17.0.6b802.4-9586694)
-
-[!] Android Studio (version unknown)
-    • Android Studio at /Users/damilolaalimi/Downloads/Android Studio
-      Preview.app/Contents
-    • Flutter plugin can be installed from:
-      🔨 https://plugins.jetbrains.com/plugin/9212-flutter
-    • Dart plugin can be installed from:
-      🔨 https://plugins.jetbrains.com/plugin/6351-dart
-    ✗ Unable to determine Android Studio version.
-    • Java version OpenJDK Runtime Environment (build
-      17.0.7+0-17.0.7b1000.6-10550314)
-
-[✓] VS Code (version 1.83.1)
-    • VS Code at /Applications/Visual Studio Code.app/Contents
-    • Flutter extension version 3.50.0
-
-[✓] VS Code (version 1.83.1)
-    • VS Code at /Users/damilolaalimi/Downloads/Visual Studio Code.app/Contents
-    • Flutter extension version 3.50.0
-
-[✓] Connected device (4 available)
-    • sdk gphone64 arm64 (mobile) • emulator-5554             • android-arm64  •
-      Android 14 (API 34) (emulator)
-    • Damilola’s iPhone (mobile)  • 00008110-001964480AE1801E • ios            •
-      iOS 17.0.2 21A351
-    • macOS (desktop)             • macos                     • darwin-arm64   •
-      macOS 14.0 23A344 darwin-arm64
-    • Chrome (web)                • chrome                    • web-javascript •
-      Google Chrome 118.0.5993.117
-
-[!] Network resources
-    ✗ A network error occurred while checking "https://github.com/": Operation
-      timed out
-
-! Doctor found issues in 3 categories.
-``` 
-```
-[!] Flutter (Channel master, 3.16.0-21.0.pre.42, on macOS 14.0 23A344 darwin-arm64, locale en-NG)
-    • Flutter version 3.16.0-21.0.pre.42 on channel master at /Users/damilolaalimi/fvm/versions/master
-    ! Warning: `flutter` on your path resolves to /Users/damilolaalimi/sdks/flutter/bin/flutter, which is not inside your current Flutter SDK checkout at /Users/damilolaalimi/fvm/versions/master. Consider adding /Users/damilolaalimi/fvm/versions/master/bin to the front of your path.
-    ! Warning: `dart` on your path resolves to /opt/homebrew/Cellar/dart/3.1.5/libexec/bin/dart, which is not inside your current Flutter SDK checkout at /Users/damilolaalimi/fvm/versions/master. Consider adding /Users/damilolaalimi/fvm/versions/master/bin to the front of your path.
-    • Upstream repository https://github.com/flutter/flutter.git
-    • Framework revision f7d1b35dca (3 hours ago), 2023-11-02 03:21:43 -0400
-    • Engine revision 3c1e8f457e
-    • Dart version 3.3.0 (build 3.3.0-87.0.dev)
-    • DevTools version 2.29.0
-    • If those were intentional, you can disregard the above warnings; however it is recommended to use "git" directly to perform update checks and upgrades.
-
-[✓] Android toolchain - develop for Android devices (Android SDK version 34.0.0)
-    • Android SDK at /Users/damilolaalimi/Library/Android/sdk
-    • Platform android-34, build-tools 34.0.0
-    • ANDROID_HOME = /Users/damilolaalimi/Library/Android/sdk
-    • Java binary at: /Applications/Android Studio.app/Contents/jbr/Contents/Home/bin/java
-    • Java version OpenJDK Runtime Environment (build 17.0.6+0-17.0.6b802.4-9586694)
-    • All Android licenses accepted.
-
-[✓] Xcode - develop for iOS and macOS (Xcode 15.0.1)
-    • Xcode at /Applications/Xcode.app/Contents/Developer
-    • Build 15A507
-    • CocoaPods version 1.12.1
-
-[✓] Chrome - develop for the web
-    • Chrome at /Applications/Google Chrome.app/Contents/MacOS/Google Chrome
-
-[✓] Android Studio (version 2022.2)
-    • Android Studio at /Applications/Android Studio.app/Contents
-    • Flutter plugin can be installed from:
-      🔨 https://plugins.jetbrains.com/plugin/9212-flutter
-    • Dart plugin can be installed from:
-      🔨 https://plugins.jetbrains.com/plugin/6351-dart
-    • Java version OpenJDK Runtime Environment (build 17.0.6+0-17.0.6b802.4-9586694)
-
-[!] Android Studio (version unknown)
-    • Android Studio at /Users/damilolaalimi/Downloads/Android Studio Preview.app/Contents
-    • Flutter plugin can be installed from:
-      🔨 https://plugins.jetbrains.com/plugin/9212-flutter
-    • Dart plugin can be installed from:
-      🔨 https://plugins.jetbrains.com/plugin/6351-dart
-    ✗ Unable to determine Android Studio version.
-    • Java version OpenJDK Runtime Environment (build 17.0.7+0-17.0.7b1000.6-10550314)
-
-[✓] VS Code (version 1.83.1)
-    • VS Code at /Applications/Visual Studio Code.app/Contents
-    • Flutter extension version 3.50.0
-
-[✓] VS Code (version 1.83.1)
-    • VS Code at /Users/damilolaalimi/Downloads/Visual Studio Code.app/Contents
-    • Flutter extension version 3.50.0
-
-[✓] Connected device (3 available)
-    • Damilola’s iPhone (mobile) • 00008110-001964480AE1801E • ios            • iOS 17.0.2 21A351
-    • macOS (desktop)            • macos                     • darwin-arm64   • macOS 14.0 23A344 darwin-arm64
-    • Chrome (web)               • chrome                    • web-javascript • Google Chrome 118.0.5993.117
-
-[✓] Network resources
-    • All expected network resources are available.
-
-! Doctor found issues in 2 categories.
-exit code 0
-``` 
-
-</p>
-</details> 
---
-author:	vashworth
-association:	member
-edited:	false
-status:	none
---
-Framework team - Is the height of the selection controlled by the framework?
---
-author:	vashworth
-association:	member
-edited:	false
-status:	none
---
-@yuhangang Can you file a separate issue for the drag selection issue you describe in Action Results > 2?
---
-author:	yuhangang
-association:	none
-edited:	true
-status:	none
---
-@vashworth done, and renamed the current issue
-
-https://github.com/flutter/flutter/issues/137976
---
-author:	jmagman
-association:	member
-edited:	false
-status:	none
---
-> Framework team - Is the height of the selection controlled by the framework?
-
-Maybe text-input team knows?
---
-author:	Renzo-Olivares
-association:	member
-edited:	false
-status:	none
---
-Hi @yuhangang, the style of the selection height and width is configurable through `SelectableText.selectionHeightStyle` and `SelectableText.selectionWidthStyle`. `TextField` also has these members, but `Text` widgets under a `SelectionArea` do not have these as configurable yet. By default `TextField` and `SelectableText` default these values to [`BoxHeightStyle.tight`](https://api.flutter.dev/flutter/dart-ui/BoxHeightStyle.html) which is the behavior you are experiencing on iOS, but it is strange that this differs from the Android behavior. cc @LongCatIsLooong @justinmc for any insight.
-
-You can achieve a more consistent behavior using `BoxSelectionHeightStyle.max` for the `selectionHeightStyle`, but this does increase the size of the highlight.
-
-https://github.com/flutter/flutter/assets/948037/e2b53aba-3a1d-403c-adbd-fa64319ed52e
-- Running on iOS simulator
---
-author:	lucky1213
-association:	none
-edited:	true
-status:	none
---
-@Renzo-Olivares 
-Can the selectionHeightStyle parameter be added to SelectionArea?
-
---
-author:	flutter-triage-bot
-association:	none
-edited:	false
-status:	none
---
-This issue is assigned to @Renzo-Olivares but has had no recent status updates. Please consider unassigning this issue if it is not going to be addressed in the near future. This allows people to have a clearer picture of what work is actually planned. Thanks!
+@adrianflutur Thanks for the report.
 --
 
     </comments>
