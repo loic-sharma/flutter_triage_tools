@@ -39,6 +39,7 @@ Summarize each of the following GitHub issues.
 
 Suggest a title for each, in sentence case. If the issue is specific to a
 platform, prefix the title with the platform name, e.g. "[Android]" or "[iOS]".
+If the issue has a screenshot or video, include a link to it.
 </instructions>
 
 <example_output>
@@ -51,6 +52,8 @@ platform, prefix the title with the platform name, e.g. "[Android]" or "[iOS]".
 devices, the keypress is not sent to the TextField. This appears to be a bug in
 `_HighlightModeManager`: it assumes all `KeyMessage`s are physical key presses,
 however, Android's backspace virtual key can send a `KeyMessage`.
+
+**Screenshot or video**: https://github.com/user-attachments/assets/abcdef
 
 </example_output>
 ''');

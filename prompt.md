@@ -3,6 +3,7 @@ Summarize each of the following GitHub issues.
 
 Suggest a title for each, in sentence case. If the issue is specific to a
 platform, prefix the title with the platform name, e.g. "[Android]" or "[iOS]".
+If the issue has a screenshot or video, include a link to it.
 </instructions>
 
 <example_output>
@@ -15,6 +16,8 @@ platform, prefix the title with the platform name, e.g. "[Android]" or "[iOS]".
 devices, the keypress is not sent to the TextField. This appears to be a bug in
 `_HighlightModeManager`: it assumes all `KeyMessage`s are physical key presses,
 however, Android's backspace virtual key can send a `KeyMessage`.
+
+**Screenshot or video**: https://github.com/user-attachments/assets/abcdef
 
 </example_output>
 
@@ -38,11 +41,7 @@ The [`TextField` widget](https://api.flutter.dev/flutter/material/TextField-clas
 I propose adding another optional param to `TextField` that configures whether `maxLength` is interpreted as grapheme clusters, which will remain the default behavior, or as code points.
     </body>
     <comments>
-author:	loic-sharma
-association:	member
-edited:	true
-status:	none
---
+      <comment author="loic-sharma">
 @chrisbobbe Did you consider making a custom text input formatter (see [`TextInputFormatter`](https://api.flutter.dev/flutter/services/TextInputFormatter-class.html))?
 
 Here's a prototype by Gemini:
@@ -86,12 +85,8 @@ TextField(
 I would recommend referring to [`LengthLimitingTextInputFormatter`](https://github.com/flutter/flutter/blob/a7a950aea089d638bdaf6ea9d0ade91f819b3a7b/packages/flutter/lib/src/services/text_formatter.dart#L445) for a thorough implementation which adapts to different platforms and also takes text composition into account.
 
 Kudos to @LongCatIsLooong for the suggestion during text input triage
---
-author:	loic-sharma
-association:	member
-edited:	false
-status:	none
---
+      </comment>
+      <comment author="loic-sharma">
 Ah I missed the discussion in the linked PR. I added a comment there: https://github.com/flutter/flutter/pull/182920#issuecomment-3974195223
 
 > ...
@@ -99,12 +94,8 @@ Ah I missed the discussion in the linked PR. I added a comment there: https://gi
 > 
 > Instead of adding this feature directly to `TextField`, I'd prefer that `TextField` provides the necessary foundations that let you build this feature on top of `TextField` using composition. Since a custom `TextInputFormatter` should let you add code point limits (see [#182907 (comment)](https://github.com/flutter/flutter/issues/182907#issuecomment-3974082231) for an example prototype), I lean towards not adding this feature.
 > ...
---
-author:	chrisbobbe
-association:	contributor
-edited:	true
-status:	none
---
+      </comment>
+      <comment author="chrisbobbe">
 Interesting; yes, that should work re: enforcement.
 
 The other piece of functionality controlled by `maxLength` is the "counter" showing current / maximum character counts. I see multiple other ways to control that:
@@ -126,8 +117,7 @@ and I was able to make it show accurate numbers by using the field's `TextEditin
 (That solution feels simpler than the `InputDecoration` controls; I think I'd need to involve a stateful widget and a listener on the `TextEditingController` to make live-updating work with those.)
 
 So I think I'm all set, and this can be closed as not planned. Thanks for considering!
---
-
+      </comment>
     </comments>
   </issue>
   <issue id="182876">
@@ -202,14 +192,9 @@ As an app-level workaround, a **clipboard bridge** works: monitor `WM_CLIPBOARDU
 
     </body>
     <comments>
-author:	mbcorona
-association:	member
-edited:	false
-status:	none
---
+      <comment author="mbcorona">
 Hi @dbsxdbsx , thanks for reporting, labeling team-engine for review of this issue.
---
-
+      </comment>
     </comments>
   </issue>
   <issue id="181907">
@@ -352,14 +337,9 @@ $ flutter doctor -v
 
     </body>
     <comments>
-author:	saurabh-mirajkar
-association:	member
-edited:	false
-status:	none
---
+      <comment author="saurabh-mirajkar">
 @adrianflutur Thanks for the report.
---
-
+      </comment>
     </comments>
   </issue>
 </collection>
