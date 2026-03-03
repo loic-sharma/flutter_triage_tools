@@ -53,7 +53,9 @@ devices, the keypress is not sent to the TextField. This appears to be a bug in
 `_HighlightModeManager`: it assumes all `KeyMessage`s are physical key presses,
 however, Android's backspace virtual key can send a `KeyMessage`.
 
-**Screenshot or video**: https://github.com/user-attachments/assets/abcdef
+**Screenshot or video**:
+
+https://github.com/user-attachments/assets/abcdef
 
 </example_output>
 ''');
