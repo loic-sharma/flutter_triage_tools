@@ -41,7 +41,9 @@ Summarize each of the following GitHub issues and pull requests.
 
 Suggest a title for each, in sentence case. If the issue is specific to a
 platform, prefix the title with the platform name, e.g. "[Android]" or "[iOS]".
-If the issue has a screenshot or video, include a link to it.
+
+If the issue has a screenshot or video, include a link to it. Ensure there is
+an empty line before the screenshot/video URL.
 </instructions>
 
 <example_output>
