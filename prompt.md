@@ -5,7 +5,7 @@ Suggest a title for each, in sentence case. If the issue is specific to a
 platform, prefix the title with the platform name, e.g. "[Android]" or "[iOS]".
 
 If the issue has a screenshot or video, include a link to it. Ensure there is
-an empty line before the screenshot/video URL.
+an empty line before each screenshot/video URL.
 </instructions>
 
 <example_output>
@@ -21,7 +21,9 @@ however, Android's backspace virtual key can send a `KeyMessage`.
 
 **Screenshot or video**:
 
-https://github.com/user-attachments/assets/abcdef
+https://github.com/user-attachments/assets/abc
+
+https://github.com/user-attachments/assets/xyz
 
 </example_output>
 
