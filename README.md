@@ -6,7 +6,7 @@
 2. Optional: Authenticate to GitHub using [GitHub CLI][GitHub CLI].
 
    ```sh
-   export GITHUB_TOKEN=$(gh auth token) 
+   export GITHUB_TOKEN=$(gh auth token)
    ```
 
 3. Create a prompt to triage issues:

@@ -79,28 +79,8 @@ however, Android's backspace virtual key can send a `KeyMessage`.
     
     // Structure the comments dump similarly to how `gh issue view --comments` does it
     final dumpBuffer = StringBuffer();
-    dumpBuffer.writeln('author: $author');
-    dumpBuffer.writeln('association: ${association.toLowerCase()}');
-    dumpBuffer.writeln('edited: false');
-    dumpBuffer.writeln('status: none');
-    dumpBuffer.writeln('--');
-    dumpBuffer.writeln(body);
-    dumpBuffer.writeln('--');
 
-    for (final comment in commentsData) {
-      final c = comment as Map<String, dynamic>;
-      final cAuthor = c['user']['login'] as String;
-      final cAssociation = c['author_association'] as String;
-      final cBody = c['body'] as String? ?? '';
 
-      dumpBuffer.writeln('author: $cAuthor');
-      dumpBuffer.writeln('association: ${cAssociation.toLowerCase()}');
-      dumpBuffer.writeln('edited: false');
-      dumpBuffer.writeln('status: none');
-      dumpBuffer.writeln('--');
-      dumpBuffer.writeln(cBody);
-      dumpBuffer.writeln('--');
-    }
 
     buffer.writeln('  <issue id="$number">');
     buffer.writeln('    <title>$title</title>');
@@ -108,7 +88,15 @@ however, Android's backspace virtual key can send a `KeyMessage`.
     buffer.writeln(body);
     buffer.writeln('    </body>');
     buffer.writeln('    <comments>');
-    buffer.writeln(dumpBuffer.toString());
+    for (final comment in commentsData) {
+      final c = comment as Map<String, dynamic>;
+      final commentAuthor = c['user']['login'] as String;
+      final commentBody = c['body'] as String? ?? '';
+
+      buffer.writeln('      <comment author="$commentAuthor">');
+      buffer.writeln(commentBody);
+      buffer.writeln('      </comment>');
+    }
     buffer.writeln('    </comments>');
     buffer.writeln('  </issue>');
   }
