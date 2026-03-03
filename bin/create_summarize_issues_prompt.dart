@@ -23,6 +23,7 @@ void main(List<String> args) async {
     'q': '$query repo:flutter/flutter',
   });
 
+
   final searchResponse = await http.get(searchUri, headers: headers);
   if (searchResponse.statusCode != 200) {
     print('Error fetching issues: ${searchResponse.statusCode} ${searchResponse.body}');
@@ -32,10 +33,11 @@ void main(List<String> args) async {
   final searchData = jsonDecode(searchResponse.body) as Map<String, dynamic>;
   final issues = searchData['items'] as List<dynamic>;
 
+
   final buffer = StringBuffer();
   buffer.writeln('''
 <instructions>
-Summarize each of the following GitHub issues.
+Summarize each of the following GitHub issues and pull requests.
 
 Suggest a title for each, in sentence case. If the issue is specific to a
 platform, prefix the title with the platform name, e.g. "[Android]" or "[iOS]".
@@ -46,7 +48,7 @@ If the issue has a screenshot or video, include a link to it.
 
 # [Android] Backspace is not sent to TextField
 
-**Issue ID**: [flutter#123](https://github.com/flutter/flutter/issues/123)
+**Link**: [flutter#123](https://github.com/flutter/flutter/issues/123)
 
 **Summary**: When Backspace is pressed on a virtual keyboard of certain Samsung
 devices, the keypress is not sent to the TextField. This appears to be a bug in
@@ -67,38 +69,56 @@ https://github.com/user-attachments/assets/abcdef
     final number = issue['number'] as int;
     final title = issue['title'] as String;
     final body = issue['body'] as String? ?? '';
-    final user = issue['user'] as Map<String, dynamic>;
-    final author = user['login'] as String;
-    final association = issue['author_association'] as String;
+    final isPr = issue['pull_request'] != null;
+    final type = isPr ? 'pull_request' : 'issue';
 
-    // Fetch comments using GitHub API
-    final commentsUri = Uri.https('api.github.com', '/repos/flutter/flutter/issues/$number/comments');
-    final commentsResponse = await http.get(commentsUri, headers: headers);
-
-    if (commentsResponse.statusCode != 200) {
-      print('Error fetching comments for issue #$number: ${commentsResponse.statusCode}');
-      return;
-    }
-
-    final commentsData = jsonDecode(commentsResponse.body) as List<dynamic>;
-
-    buffer.writeln('  <issue id="$number">');
+    buffer.writeln('  <$type id="$number">');
     buffer.writeln('    <title>$title</title>');
     buffer.writeln('    <body>');
     buffer.writeln(body);
     buffer.writeln('    </body>');
     buffer.writeln('    <comments>');
-    for (final comment in commentsData) {
-      final c = comment as Map<String, dynamic>;
-      final commentAuthor = c['user']['login'] as String;
-      final commentBody = c['body'] as String? ?? '';
 
-      buffer.writeln('      <comment author="$commentAuthor">');
-      buffer.writeln(commentBody);
-      buffer.writeln('      </comment>');
+    // Fetch comments using GitHub API
+    if (isPr) {
+      final reviewsUri = Uri.https('api.github.com', '/repos/flutter/flutter/pulls/$number/comments');
+      final reviewsResponse = await http.get(reviewsUri, headers: headers);
+      if (reviewsResponse.statusCode == 200) {
+        final reviewsData = jsonDecode(reviewsResponse.body) as List<dynamic>;
+        for (final review in reviewsData) {
+          final r = review as Map<String, dynamic>;
+          final reviewAuthor = r['user']['login'] as String;
+          final reviewBody = r['body'] as String? ?? '';
+
+          buffer.writeln('      <comment author="$reviewAuthor">');
+          buffer.writeln(reviewBody);
+          buffer.writeln('      </comment>');
+        }
+      } else {
+        print('Warning: skipping reviews for $type #$number due to status code ${reviewsResponse.statusCode}');
+      }
+    } else {
+      final commentsUri = Uri.https('api.github.com', '/repos/flutter/flutter/issues/$number/comments');
+      final commentsResponse = await http.get(commentsUri, headers: headers);
+
+      if (commentsResponse.statusCode == 200) {
+        final commentsData = jsonDecode(commentsResponse.body) as List<dynamic>;
+        for (final comment in commentsData) {
+          final c = comment as Map<String, dynamic>;
+          final commentAuthor = c['user']['login'] as String;
+          final commentBody = c['body'] as String? ?? '';
+
+          buffer.writeln('      <comment author="$commentAuthor">');
+          buffer.writeln(commentBody);
+          buffer.writeln('      </comment>');
+        }
+      } else {
+        print('Warning: skipping comments for $type #$number due to status code ${commentsResponse.statusCode}');
+      }
     }
+
     buffer.writeln('    </comments>');
-    buffer.writeln('  </issue>');
+    buffer.writeln('  </$type>');
   }
 
   buffer.writeln('</collection>');
@@ -106,4 +126,3 @@ https://github.com/user-attachments/assets/abcdef
   // 3. Output for you to copy-paste
   print(buffer.toString());
 }
-
