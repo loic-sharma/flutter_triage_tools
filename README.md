@@ -3,7 +3,12 @@
 ## Instructions
 
 1. Install [Gemini CLI][Gemini CLI].
-2. Install [GitHub CLI][GitHub CLI].
+2. Optional: Authenticate to GitHub using [GitHub CLI][GitHub CLI].
+
+   ```sh
+   export GITHUB_TOKEN=$(gh auth token) 
+   ```
+
 3. Create a prompt to triage issues:
 
    ```sh
