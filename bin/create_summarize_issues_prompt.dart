@@ -76,11 +76,6 @@ however, Android's backspace virtual key can send a `KeyMessage`.
     }
 
     final commentsData = jsonDecode(commentsResponse.body) as List<dynamic>;
-    
-    // Structure the comments dump similarly to how `gh issue view --comments` does it
-    final dumpBuffer = StringBuffer();
-
-
 
     buffer.writeln('  <issue id="$number">');
     buffer.writeln('    <title>$title</title>');
