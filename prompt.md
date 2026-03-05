@@ -474,49 +474,6 @@ Unnecessary since DefaultTabController is already marked as const
       </comment>
     </comments>
   </pull_request>
-  <pull_request id="183050">
-    <title>[Impeller] Update comments to reflect new info about 2-pass rendering</title>
-    <body>
-This is a follow-on to https://github.com/flutter/flutter/pull/182886 where new information about the Impeller 2-pass rendering system and, in particular, how it applies to glyph caching was uncovered. Some of the comments were stale after those discoveries so this PR addresses those changes.
-
-Most of the changes are added or modified comments.
-One obsolete method had a declaration and no definition, the declaration is removed.
-One new structure is moved to a different header file with which it is more closely associated.
-
-There are no test updates since no implementations were changed.
-    </body>
-    <comments>
-      <comment author="gemini-code-assist[bot]">
-![medium](https://www.gstatic.com/codereviewagent/medium-priority.svg)
-
-For consistency with the Doxygen-style comments used elsewhere in this file and the codebase (e.g., `@brief`), it's recommended to use `@important` instead of `\\important`.
-
-```suggestion
-/// @important It is important to note that the 2 passes perform slightly
-```
-
-<details>
-<summary>References</summary>
-
-1. The Google C++ Style Guide is not prescriptive about documentation comment format, but consistency is a key principle of good style. This project appears to use `@` as a prefix for Doxygen-style tags (like `@brief`), so using `@important` would be more consistent. <sup>([link](https://github.com/flutter/flutter/blob/master/.gemini/styleguide.md))</sup>
-</details>
-      </comment>
-      <comment author="gemini-code-assist[bot]">
-![medium](https://www.gstatic.com/codereviewagent/medium-priority.svg)
-
-There's a typo in `infomation`. It should be `information`.
-
-```suggestion
-/// Performs a first pass over the display list to collect information
-```
-      </comment>
-      <comment author="gaaclarke">
-```suggestion
-  /// The TextFrame being rendered.
-```
-      </comment>
-    </comments>
-  </pull_request>
   <pull_request id="182920">
     <title>TextField: add code-point mode for maxLength counting</title>
     <body>
@@ -698,6 +655,18 @@ My understanding is `Timer` is used to lag the function calls, but I am not sure
       </comment>
       <comment author="victorsanni">
 But we do this below: https://github.com/flutter/flutter/pull/182870/changes#r2850174911
+      </comment>
+      <comment author="dkwingsmt">
+I see your point. I think it doesn't matter here since it's in a test where we're safe to ignore all futures. So the current change is good by adding ignore to both `invokeMethod`. Or is there any other concern you're talking about?
+      </comment>
+      <comment author="dkwingsmt">
+First, for `startLiveTextInput`, there are two ways to design its API.
+* Either we make `startLiveTextInput` return void, indicating that code who uses it is not allowed to know the result of this `startLiveTextInput` call and `startLiveTextInput` should report to `FlutterError` in a `catchError` within itself.
+* Or we make `startLiveTextInput` return a future, indicating that code who uses it is responsible of handling the result of this `startLiveTextInput` call, and is recommended to report to `FlutterError` in a `catchError` after this call.
+
+We're making a design decision here, because we can choose how users should handle it. What I suggested in that comment suggested the 2nd choice, although I'm ok with either. If we choose the 2nd choice, we should make sure our own invocations process the errors - there's exactly one use in `editable_text.dart`.
+
+As for `_handleWebFirstFrame` (and other similar cases below), the callback is handled by an API that does not handle the async result at all (in this case, `addPostFrameCallback`; in other cases, `Focus`). Therefore we have to choose the 1st way and provide a callback that handles these errors.
       </comment>
     </comments>
   </pull_request>
@@ -1279,6 +1248,34 @@ This behavior - that `TextInputClient.refocus` is ignored unless the connection 
       // Send refocus message to re-establish the connection.
 ```
       </comment>
+      <comment author="mdebbar">
+Rationale for current implementation: if a connection is already open, then the text field is already focused, so refocusing is a no-op. Is that a correct assumption?
+      </comment>
+      <comment author="loic-sharma">
+> if a connection is already open, then the text field is already focused, so refocusing is a no-op.
+
+While this _might_ be true for `EditableText`, I don't think we can make this assumption universally. You can make a custom text input client with weird focus behaviors.
+
+Also @LongCatIsLooong bubbled up an interesting concern during Jan 8's text input sync ([Google internal link](https://docs.google.com/document/d/1vimZnqmmv5ZjTc9mDZ73cX3ztM6hlAXTSiznd5gB80c/edit?resourcekey=0-9Zl8Zp8pdQwYsSRm8sLcCA&tab=t.0#heading=h.eimx21agxelp)): on iOS, the input method can do actions even after you unfocused. For example, if you start an IME composition but don't complete it and then move focus, IME composition completes after focus has moved. The ideal solution would be keeping connections open for all focusable text fields, regardless of whether they are actually focused. This might be something we do in the future.
+      </comment>
+      <comment author="loic-sharma">
+(BTW I'm happy to stick with the current implementation as-is, my suggestion is only for the name of the platform message)
+      </comment>
+      <comment author="loic-sharma">
+Is this comment up-to-date? It looks like this disables pointer events on iOS too.
+      </comment>
+      <comment author="mdebbar">
+I gave this a little more thought.
+
+Based on what you said (which makes sense), I think we should be less opinionated on how the input client should behave and instead treat this as an event rather than a request for a specific action. I.e. I'm proposing we name it "onFocusReceived" or something similar, and each client should react to it as it sees fit (default would be to refocus, which will re-establish the connection). This is similar to the existing "onConnectionClosed".
+
+I'm also going to remove the condition `if (!alreadyFocused) { refocus(); }`, and make it so it always calls `requestFocus` (which is mostly a no-op if the node already has focus: [see code](https://github.com/flutter/flutter/blob/167f30fc7d2ce4f83e2a5439eb5e074c431c27b3/packages/flutter/lib/src/widgets/focus_manager.dart#L1184-L1187)).
+      </comment>
+      <comment author="loic-sharma">
+> I'm proposing we name it "onFocusReceived" 
+
+Love it! Thanks for the thoughtful response :)
+      </comment>
     </comments>
   </pull_request>
   <pull_request id="181722">
@@ -1646,368 +1643,6 @@ Period at the end.
       </comment>
       <comment author="loic-sharma">
 Should this line be removed? The comment indicates this method intends to no-op on obscured text.
-      </comment>
-    </comments>
-  </pull_request>
-  <pull_request id="179928">
-    <title>fix: text selection two handles directionality.</title>
-    <body>
-This PR fixes an issue where text selection handles would render facing the wrong direction when the text directionality differed from the ambient directionality (e.g., selecting English (LTR) text within an application set to Arabic (RTL)).
-
-Previously, [TextSelectionOverlay](cci:2://file:///Users/mohammadkamel/flutter/packages/flutter/lib/src/widgets/text_selection.dart:329:0-1059:1) determined the start and end handle types based primarily on the ambient `TextDirection` and the logical selection range. This caused handles to swap (pointing away from the selection) in mixed-directionality scenarios.
-
-This change updates the logic in [_updateSelectionOverlay](cci:1://file:///Users/mohammadkamel/flutter/packages/flutter/lib/src/widgets/text_selection.dart:541:2-578:3) to determine handle types based on the **visual horizontal position** of the selection endpoints.
-*   The endpoint physically to the left (`min(dx)`) is assigned `TextSelectionHandleType.left` (the handle that points right).
-*   The endpoint physically to the right (`max(dx)`) is assigned `TextSelectionHandleType.right` (the handle that points left).
-
-This ensures handles always "hug" the selection correctly, regardless of the text or ambient direction.
-
-**Tests Added:**
-Added a new test group in `text_selection_test.dart` that explicitly verifies handle positioning for:
-*   Ambient LTR, Text LTR (Control)
-*   Ambient RTL, Text RTL (Control)
-*   Ambient RTL, Text LTR (Bug case fix)
-*   Ambient LTR, Text RTL (Bug case fix)
-
-*Fixes # [Replace with your Issue Number, e.g. 12345]*
-
-## Pre-launch Checklist
-
-- [x] I read the [Contributor Guide] and followed the process outlined there for submitting PRs.
-- [x] I read the [Tree Hygiene] wiki page, which explains my responsibilities.
-- [x] I read and followed the [Flutter Style Guide], including [Features we expect every widget to implement].
-- [x] I signed the [CLA].
-- [x] I listed at least one issue that this PR fixes in the description above.
-- [x] I updated/added relevant documentation (doc comments with `///`).
-- [x] I added new tests to check the change I am making, or this PR is [test-exempt].
-- [x] I followed the [breaking change policy] and added [Data Driven Fixes] where supported.
-- [x] All existing and new tests are passing.
-
-If you need help, consider asking for advice on the #hackers-new channel on [Discord].
-
-**Note**: The Flutter team is currently trialing the use of [Gemini Code Assist for GitHub](https://developers.google.com/gemini-code-assist/docs/review-github-code). Comments from the `gemini-code-assist` bot should not be taken as authoritative feedback from the Flutter team. If you find its comments useful you can update your code accordingly, but if you are unsure or disagree with the feedback, please feel free to wait for a Flutter team member's review for guidance on which automated comments should be addressed.
-
-![image_issue](https://github.com/user-attachments/assets/7de61b60-c1dd-44bb-a5c8-34ff5d451350)
-
-<!-- Links -->
-[Contributor Guide]: https://github.com/flutter/flutter/blob/main/docs/contributing/Tree-hygiene.md#overview
-[Tree Hygiene]: https://github.com/flutter/flutter/blob/main/docs/contributing/Tree-hygiene.md
-[test-exempt]: https://github.com/flutter/flutter/blob/main/docs/contributing/Tree-hygiene.md#tests
-[Flutter Style Guide]: https://github.com/flutter/flutter/blob/main/docs/contributing/Style-guide-for-Flutter-repo.md
-[Features we expect every widget to implement]: https://github.com/flutter/flutter/blob/main/docs/contributing/Style-guide-for-Flutter-repo.md#features-we-expect-every-widget-to-implement
-[CLA]: https://cla.developers.google.com/
-[flutter/tests]: https://github.com/flutter/tests
-[breaking change policy]: https://github.com/flutter/flutter/blob/main/docs/contributing/Tree-hygiene.md#handling-breaking-changes
-[Discord]: https://github.com/flutter/flutter/blob/main/docs/contributing/Chat.md
-[Data Driven Fixes]: https://github.com/flutter/flutter/blob/main/docs/contributing/Data-driven-Fixes.md
-    </body>
-    <comments>
-      <comment author="gemini-code-assist[bot]">
-![medium](https://www.gstatic.com/codereviewagent/medium-priority.svg)
-
-For improved type safety and readability, consider refactoring `directionalityTestCases` to use a dedicated data class instead of `Map<String, dynamic>`. This approach eliminates the need for casting within the test and makes the data structure more explicit and less error-prone.
-
-You could define a helper class like this:
-
-```dart
-class _DirectionalityTestCase {
-  const _DirectionalityTestCase({
-    required this.description,
-    required this.ambientDirection,
-    required this.text,
-    required this.selectionBase,
-    required this.selectionExtent,
-  });
-
-  final String description;
-  final TextDirection ambientDirection;
-  final String text;
-  final int selectionBase;
-  final int selectionExtent;
-}
-```
-
-Then, the `directionalityTestCases` list would be a `List<_DirectionalityTestCase>`, and you could access properties directly (e.g., `testCase.text`) without casting.
-      </comment>
-      <comment author="gemini-code-assist[bot]">
-![medium](https://www.gstatic.com/codereviewagent/medium-priority.svg)
-
-To improve code clarity and avoid redundancy, you can reuse `controller.selection` here. A new `TextSelection` object is being constructed with the same parameters that were just used to set `controller.selection`.
-
-```suggestion
-          controller.selection,
-```
-      </comment>
-      <comment author="gemini-code-assist[bot]">
-![medium](https://www.gstatic.com/codereviewagent/medium-priority.svg)
-
-For conciseness, you can use `math.min` and `math.max` to determine the minimum and maximum endpoint X values. You'll need to add `import 'dart:math' as math;` at the top of the file.
-
-```suggestion
-        final minEndpointX = math.min(point1X, point2X);
-        final maxEndpointX = math.max(point1X, point2X);
-```
-      </comment>
-      <comment author="Renzo-Olivares">
-I think we can avoid this additional level of nesting here if we make this case a boolean, and use a ternary operator in the handle assignments below..
-      </comment>
-      <comment author="Renzo-Olivares">
-nit: Add a period to the end of the comments in the added tests.
-      </comment>
-      <comment author="Renzo-Olivares">
-I think we want to avoid using `Material` in the widgets library moving forward (including `TextField`). However, in this case the infrastructure (helper test widgets) are not yet in place. I am working on a test text field https://github.com/flutter/flutter/pull/180494/ but it do not have a solution for testing selection handles yet. A test `WidgetsApp` is also being worked on here https://github.com/flutter/flutter/pull/180456. fyi @loic-sharma @justinmc 
-      </comment>
-      <comment author="Renzo-Olivares">
-Giving this another thought, I don't think the logic here is robust enough to handle multi line scenarios. See the example below.
-
-<img width="1080" height="2364" alt="57" src="https://github.com/user-attachments/assets/bbe200c1-7733-41ad-9917-4d1982d273ff" />
-
-      </comment>
-      <comment author="muhammadkamel">
-Will keep it until the PR https://github.com/flutter/flutter/pull/180456 merged.
-      </comment>
-      <comment author="muhammadkamel">
-Can you please check now
-      </comment>
-      <comment author="Renzo-Olivares">
-<img width="1080" height="2364" alt="58" src="https://github.com/user-attachments/assets/15d25ff7-47f3-439f-9efd-f82a4a890cbd" />
-
-The updated PR fixes the selection handle directionality for LTR TextField in LTR app, but still remains broken for LTR Textfield in RTL app.
-      </comment>
-      <comment author="Renzo-Olivares">
-The outer `TapRegion` here is necessary for the context menu to work properly with `SelectableRegion`.
-      </comment>
-      <comment author="Renzo-Olivares">
-This member and its equivalent in `TextSelectionOverlay` doesn't seem to be used by anything, is this needed?
-      </comment>
-      <comment author="Renzo-Olivares">
-I suggest something along these lines
-
-```dart
-  void _updateSelectionOverlay() {
-    final List<TextSelectionPoint> endpoints = renderObject.getEndpointsForSelection(_selection);
-    late final TextSelectionHandleType startHandleType;
-    late final TextSelectionHandleType endHandleType;
-    if (_selection.isCollapsed) {
-      startHandleType = TextSelectionHandleType.collapsed;
-      endHandleType = TextSelectionHandleType.collapsed;
-    } else {
-      assert(endpoints.length == 2);
-      final TextDirection startHandleDirection =
-          endpoints.first.direction ?? renderObject.textDirection;
-      final TextDirection endHandleDirection =
-          endpoints.last.direction ?? renderObject.textDirection;
-      startHandleType = switch (startHandleDirection) {
-        TextDirection.ltr => TextSelectionHandleType.left,
-        TextDirection.rtl => TextSelectionHandleType.right,
-      };
-      endHandleType = switch (endHandleDirection) {
-        TextDirection.ltr => TextSelectionHandleType.right,
-        TextDirection.rtl => TextSelectionHandleType.left,
-      };
-    }
-    _selectionOverlay
-      // Update selection handle metrics.
-      ..startHandleType = startHandleType
-      ..lineHeightAtStart = _getStartGlyphHeight()
-      ..endHandleType = endHandleType
-      ..lineHeightAtEnd = _getEndGlyphHeight()
-      // Update selection toolbar metrics.
-      ..selectionEndpoints = endpoints
-      ..toolbarLocation = renderObject.lastSecondaryTapDownPosition;
-  }
-```
-
-It is also important to note that this behavior does not match the native iOS behavior. From my observation on iOS 26, when the text direction is not specified the text field will try to automatically detect the text direction from the text. It looks like it does this by checking the first character of the text, I tried a long piece of english text that ends with an arabic character, and a long piece of english text that starts with an arabic character. The former scenario resulted resulted in LTR directionality for the entire field, and the latter scenario resulted in RTL directionality for the entire field. In BiDi text the selection handle directionality does not change when the selection spreads across both LTR and RTL text, adhering to the inferred directionality. When the text direction is forced, the selection handles adhere to the forced directionality.
-
-I don't think we have to handle the iOS behavior in this PR, but iOS should always use `renderObject.textDirection` similar to how it did before the changes in this PR so the changes are targeted for Android.
-      </comment>
-    </comments>
-  </pull_request>
-  <pull_request id="178551">
-    <title>Fix text selection handle alignment, cursor width updates, and Android handle auto-dismissal like native approach</title>
-    <body>
-This is a new PR to replace the previously closed PR: https://github.com/flutter/flutter/pull/169715
-
-The text selection anchor/handle in InputField was slightly misaligned, shifting slightly to the left. This PR fixes the handle positioning to ensure proper alignment with the text cursor.
-
-Cursor Width Updates
-Previously, updating cursorWidth in EditableText did not reflect immediately without a hot restart. This PR updates EditableTextState.didUpdateWidget to detect cursorWidth changes and rebuild the selection overlay.
-
-Android Handle Auto-Dismissal
-On Android, text selection handles now automatically dismiss after 4 seconds of inactivity (specifically when the selection is collapsed), matching native Android behavior. A strict unit test ensures this timeout is respected.
-
-
-Before:
-![baloon_before](https://github.com/user-attachments/assets/99d69ea0-9559-4b79-8402-aa7657dc47b9)
-
-
-After fix:
-![baloon_after_fixed](https://github.com/user-attachments/assets/d89d6a99-f026-4e59-bb17-ad8950aea6f0)
-
-
-## Pre-launch Checklist
-
-- [x] I read the [Contributor Guide] and followed the process outlined there for submitting PRs.
-- [x] I read the [Tree Hygiene] wiki page, which explains my responsibilities.
-- [x] I read and followed the [Flutter Style Guide], including [Features we expect every widget to implement].
-- [x] I signed the [CLA].
-- [x] I listed at least one issue that this PR fixes in the description above.
-- [x] I updated/added relevant documentation (doc comments with `///`).
-- [x] I added new tests to check the change I am making, or this PR is [test-exempt].
-- [x] I followed the [breaking change policy] and added [Data Driven Fixes] where supported.
-- [x] All existing and new tests are passing.
-
-If you need help, consider asking for advice on the #hackers-new channel on [Discord].
-
-<!-- Links -->
-[Contributor Guide]: https://github.com/flutter/flutter/blob/main/docs/contributing/Tree-hygiene.md#overview
-[Tree Hygiene]: https://github.com/flutter/flutter/blob/main/docs/contributing/Tree-hygiene.md
-[test-exempt]: https://github.com/flutter/flutter/blob/main/docs/contributing/Tree-hygiene.md#tests
-[Flutter Style Guide]: https://github.com/flutter/flutter/blob/main/docs/contributing/Style-guide-for-Flutter-repo.md
-[Features we expect every widget to implement]: https://github.com/flutter/flutter/blob/main/docs/contributing/Style-guide-for-Flutter-repo.md#features-we-expect-every-widget-to-implement
-[CLA]: https://cla.developers.google.com/
-[flutter/tests]: https://github.com/flutter/tests
-[breaking change policy]: https://github.com/flutter/flutter/blob/main/docs/contributing/Tree-hygiene.md#handling-breaking-changes
-[Discord]: https://github.com/flutter/flutter/blob/main/docs/contributing/Chat.md
-[Data Driven Fixes]: https://github.com/flutter/flutter/blob/main/docs/contributing/Data-driven-Fixes.md
-
-
-    </body>
-    <comments>
-      <comment author="gemini-code-assist[bot]">
-![high](https://www.gstatic.com/codereviewagent/high-priority.svg)
-
-The expected `y` value for the offset appears to be incorrect. The implementation in `MaterialTextSelectionControls.getHandleAnchor` for a collapsed handle returns an offset with a `y` value of `-5.0`. This test expects `-4.6`, which will cause it to fail. Please update the expected value to match the implementation.
-
-```dart
-      const Offset expected = Offset((22.0 - 2.0) / 2, -5.0);
-```
-      </comment>
-      <comment author="gemini-code-assist[bot]">
-![medium](https://www.gstatic.com/codereviewagent/medium-priority.svg)
-
-The calculation for the collapsed handle anchor has been updated to use `cursorWidth`. However, the vertical offset has been changed from `-4` to `-5`. While this might be intentional to align with `_kHandleHandVerticalMaintenance`, it's a subtle change that could affect visual alignment. Could you confirm if this change in the vertical offset is intended and tested visually?
-      </comment>
-      <comment author="gemini-code-assist[bot]">
-![medium](https://www.gstatic.com/codereviewagent/medium-priority.svg)
-
-This empty documentation line can be removed. The Effective Dart style guide recommends avoiding empty lines in doc comments.[^1]
-
-```dart
-  /// Cursor width
-  /// This value is used for calculating the position of the text selection
-  /// handles.
-  final double cursorWidth;
-```
-
-#### Style Guide References
-[^1]: Effective Dart: Style should be followed when it does not conflict with the Flutter style guide. It recommends avoiding empty doc comment lines.
-      </comment>
-      <comment author="justinmc">
-We should watch out for breaking changes due to changing this method signature.
-      </comment>
-      <comment author="justinmc">
-Could you add a sentence explaining where you got the 4 seconds from? Like "Measured on a physical Pixel 9 running Android 16." or whatever.
-      </comment>
-      <comment author="justinmc">
-Thanks for catching this. I see the same thing on my Android 16 phone.
-      </comment>
-      <comment author="justinmc">
-Period after "width", and also add an empty line of "///".
-      </comment>
-      <comment author="justinmc">
-You can search for private widgets:
-
-```
-find.byWidgetPredicate((Widget w) => '${w.runtimeType}' == '_MyPrivateWidget')
-```
-
-But _TextSelectionHandlePainter is not a widget...
-      </comment>
-      <comment author="justinmc">
-Did you intend to add more code to verify this?
-      </comment>
-      <comment author="muhammadkamel">
-This value follows the native Android behavior. In native implementations (Kotlin/Java), the selection handle is automatically dismissed after roughly 4–5 seconds. This was measured on a physical Android device and matches the behavior seen across native apps.
-      </comment>
-      <comment author="Renzo-Olivares">
-Why is this change needed?
-      </comment>
-      <comment author="Renzo-Olivares">
-I think we can just reference `EditableText.cursorWidth` for this first line of the documentation.
-
-```dart
-/// {@macro flutter.widgets.editableText.cursorWidth}
-```
-      </comment>
-      <comment author="Renzo-Olivares">
-After the last sentence here, we should also include a bit about the default value being 2.0.
-      </comment>
-      <comment author="Renzo-Olivares">
-I think it makes sense to make this required but it might be a breaking change.
-      </comment>
-      <comment author="Renzo-Olivares">
-This documentation should instead reference the `SelectionOverlay.cursorWidth` documentation through a doc template. Similar to `selectionControls` above.
-      </comment>
-      <comment author="Renzo-Olivares">
-I'm a bit weary about adding this to `SelectionArea` since i'm not sure how it will be used. A collapsed selection should show no cursor at all on static text. Though I think the reason it is being added is because `TextSelectionOverlay/SelectionOverlay.cursorWidth` is a required argument.
-
-I see both sides:
-
-It is important for `TextSelectionOverlay/SelectionOverlay.cursorWidth` to be a required argument so it can be taken into account when calculating the handle anchor. Making it nullable would mean if a user does not provide it they may not get an accurate handle anchor. Though in the case of `SelectableRegion` and static text we do not show a cursor with a collapsed selection, so adding this parameter is not very useful at the moment.
-
-I think maybe we should hold off on changes to `SelectionArea` and `SelectableRegion` for now since the cursor is not used with static text. We can do this by keeping `TextSelectionOverlay.cursorWidth` required but making `SelectionOverlay.cursorWidth` nullable.
-      </comment>
-      <comment author="Renzo-Olivares">
-I'm a bit on the fence about having a default value for this. If someone uses this method, has a custom cursorWidth, and does not provide their cursorWidth, this will default to 2.0 and the handle will be misaligned. Another option would be to make it required, which might be a breaking change but would make the handle alignment fixed for all users. Making it nullable be similar to having a default value, if the user chooses not to provide it then the handle will remain misaligned. What do others think about these options?
-      </comment>
-      <comment author="muhammadkamel">
-@Renzo-Olivares 
-
-I have done this to fix the flutter analyze warnings
-But I can revert it if you want
-      </comment>
-      <comment author="Renzo-Olivares">
-I think instead of exposing `cursorWidth` on `TextSelectionOverlay`, `TextSelectionOverlay` should just adhere to the `cursorWidth` in its already provided `renderObject`.
-
-It feels a little strange that `TextSelectionOverlay/SelectionOverlay` exposes `cursorWidth` when it is not the one responsible for painting the cursor. Maybe it needs a more general name related to "anchor".
-      </comment>
-      <comment author="Renzo-Olivares">
-That's surprising given no other changes in this file. This PR may just need a rebase to master.
-      </comment>
-      <comment author="Renzo-Olivares">
-I don't think this public getter is needed anymore.
-      </comment>
-      <comment author="Renzo-Olivares">
-This should have a getter and setter similar to `SelectionOverlay.lineHeightAtStart`, this way `TextSelectionOverlay` can update it in `TextSelectionOverlay._updateSelectionOverlay`.
-      </comment>
-      <comment author="Renzo-Olivares">
-Why is this needed?
-      </comment>
-      <comment author="Renzo-Olivares">
-nit: end comments with a period, here and elsewhere in this file.
-      </comment>
-      <comment author="Renzo-Olivares">
-nit: end comments with a period, here and elsewhere in this file.
-      </comment>
-      <comment author="muhammadkamel">
-Ohh, I will remove it!
-      </comment>
-      <comment author="Renzo-Olivares">
-nit: this can just be a setter on a public `handleAnchorOffset` similar to other fields in this class.
-      </comment>
-      <comment author="loic-sharma">
-Silly nitpick, our technical writing style guide prefers to use "may" for legal context only.
-
-```suggestion
-  /// The [cursorWidth] argument is the thickness of the cursor, which can be
-```
-      </comment>
-      <comment author="loic-sharma">
-```suggestion
-  /// This value is used to calculate the position of the text selection
-```
       </comment>
     </comments>
   </pull_request>
