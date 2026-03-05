@@ -1,20 +1,20 @@
-# Add option to count Unicode code points for TextField max-length validation
+# [Web] Korean IME composing range assertion failure after window blur
 
-**Link**: [flutter#182907](https://github.com/flutter/flutter/issues/182907)
+**Link**: [flutter#183078](https://github.com/flutter/flutter/issues/183078)
 
-**Summary**: A request was made to allow `TextField` to enforce `maxLength` based on Unicode code points instead of the default grapheme clusters to match specific server-side validation requirements. The issue was closed as "not planned" because the same functionality can be achieved by composing existing features, specifically by using a custom `TextInputFormatter` for enforcement and the `buildCounter` property for the character count display.
+**Summary**: Switching windows (Cmd+Tab) while composing a Korean character causes an assertion failure (`googValue.googcomposing.end <= googValue.text.length`) when the user returns and presses Backspace. The browser's `compositionend` event fires on blur, but Flutter fails to sync its internal composing range, leading to a state where the composing range exceeds the actual text length.
 
-# [Windows] External voice dictation tools cannot detect TextFields via UI Automation
+# [Windows] External voice dictation tools cannot detect Flutter TextFields via UI Automation
 
 **Link**: [flutter#182876](https://github.com/flutter/flutter/issues/182876)
 
-**Summary**: External voice dictation and productivity tools on Windows are unable to detect or inject text into Flutter `TextField` widgets. This is attributed to two main issues: Flutter's Windows embedder does not properly expose UI Automation (UIA) text-editing patterns, and it still relies on the legacy IMM32 input framework rather than the modern Text Services Framework (TSF) required by most modern Windows input tools.
+**Summary**: Voice dictation and automation tools (e.g., Typeless, Windows Voice Typing) are unable to detect or inject text into Flutter `TextField` widgets. This is due to the Windows embedder not properly exposing UIA text-editing patterns and its continued reliance on the legacy IMM32 framework instead of the modern Text Services Framework (TSF) required for speech and handwriting input.
 
-# [Windows] Shift key randomly gets stuck in a pressed down state when using TextFields
+# [Windows] Shift key randomly gets stuck in a pressed state when using TextFields
 
 **Link**: [flutter#181907](https://github.com/flutter/flutter/issues/181907)
 
-**Summary**: Users report that the Shift key occasionally becomes logically stuck in a "pressed" state within Flutter applications on Windows after performing text selection or switching window focus. This leads to several side effects, including involuntary text selection, mouse wheel scrolling becoming horizontal-only, and Tab navigation moving in reverse.
+**Summary**: On Windows, the Shift key occasionally becomes logically stuck in a "pressed down" state after interacting with a `TextField` (e.g., selecting text or switching focus). This results in unintended side effects like automatic text selection, reversed Tab navigation, and horizontal-only scrolling that persist until the application is restarted.
 
 **Screenshot or video**:
 
