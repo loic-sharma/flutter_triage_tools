@@ -1,113 +1,132 @@
-# [Android] Fix emoji insertion corruption by using grapheme-aware text operations
+# [Web] Unify CanvasKit and Skwasm garbage collection
 
-**Link**: [flutter#183112](https://github.com/flutter/flutter/pull/183112)
+**Link**: [flutter#183867](https://github.com/flutter/flutter/pull/183867)
 
-**Summary**: Fixes a bug where inserting emojis into an RTL `TextField` on Android would cause text corruption and render `?` characters. The issue stemmed from the Android IME sending updates using UTF-16 code unit positions, which could split surrogate pairs. The fix updates `TextEditingValue.replaced()` and `TextInput` to use grapheme cluster boundaries, ensuring surrogate pairs are preserved and corrected when received from the platform.
+**Summary**: This pull request introduces a shared memory management system in `lib/src/engine/native_memory.dart` that both the CanvasKit and Skwasm renderers now utilize. It replaces renderer-specific finalization logic with unified `NativeMemoryFinalizer`, `UniqueRef`, and `CountedRef` abstractions, improving efficiency and enabling proper reference counting for objects like `ui.Image` and `ui.Picture`.
+
+# [iOS] Skip interactive keyboard tests for iOS 26+
+
+**Link**: [flutter#183757](https://github.com/flutter/flutter/pull/183757)
+
+**Summary**: This pull request skips interactive keyboard tests that are no longer applicable to iOS 26+. This serves as a temporary measure while a more comprehensive refactoring of the keyboard test logic is tracked separately.
+
+# Use Material.of(context) to clean up tests
+
+**Link**: [flutter#183698](https://github.com/flutter/flutter/pull/183698)
+
+**Summary**: This pull request cleans up Material-related tests by using `Material.of(context)` instead of manual element lookups. This is a preliminary step toward moving `MaterialInkController` out of the Material library as part of a larger effort to better layer Material widgets.
+
+# [iOS] Add opt-in inline prediction text input support
+
+**Link**: [flutter#183650](https://github.com/flutter/flutter/pull/183650)
+
+**Summary**: This pull request adds an `enableInlinePrediction` option to text fields, allowing applications to explicitly control iOS 17's inline predictive text behavior. It updates the engine to map this setting to `UITextInlinePredictionType` and ensures that attributed marked text is handled correctly so that predictions are processed as expected.
+
+# Fix selection highlight artifacts for faded selectable text
+
+**Link**: [flutter#183628](https://github.com/flutter/flutter/pull/183628)
+
+**Summary**: This pull request fixes a rendering bug where selecting text in a `SelectionArea` with `TextOverflow.fade` produced dark border artifacts. The fix separates the selection highlight painting from the fade overflow shader's `saveLayer`, ensuring the shader only applies to the text content itself.
 
 **Screenshot or video**:
 
-https://github.com/user-attachments/assets/701c78cb-f2c0-4cec-91fc-455f9490a6c3
+https://github.com/user-attachments/assets/22c3c8a1-3d17-40f3-8b77-fc48e9e91a25
 
-https://github.com/user-attachments/assets/409cfbd2-ecae-4368-b508-fe674f43f8a2
+https://github.com/user-attachments/assets/dbca31d9-edb0-4dea-a617-0bf8c2b809a8
 
+# [iOS] Keep multiline CupertinoTextField placeholders in bounds
 
-# [Web/Desktop] Fix SelectableText right-click selecting word
+**Link**: [flutter#183622](https://github.com/flutter/flutter/pull/183622)
+
+**Summary**: This pull request fixes a regression where multiline placeholders in `CupertinoTextField` could be positioned partially outside the text field's bounds when `maxLines` was null. The fix vertically aligns the combined group of the placeholder and editable text rather than just the editable child.
+
+# Prevent last character from remaining visible when toggling obscureText
+
+**Link**: [flutter#183488](https://github.com/flutter/flutter/pull/183488)
+
+**Summary**: This pull request fixes an issue where the most recently entered character remains briefly visible if `obscureText` is toggled quickly (e.g., true -> false -> true). It ensures that all characters are immediately obscured when the property is set to true by resetting the pending character reveal timer.
+
+**Screenshot or video**:
+
+https://github.com/user-attachments/assets/94d2ba56-c551-4385-8f88-3dd746c8dc09
+
+https://github.com/user-attachments/assets/992e0473-059c-4c7a-a1b1-8ca6bf222538
+
+# [iOS] Reland platform view hitTest approach with 2026 updates
+
+**Link**: [flutter#183484](https://github.com/flutter/flutter/pull/183484)
+
+**Summary**: This pull request relands an improved hit testing approach for iOS platform views to fix issues where touches were incorrectly blocked or fell through. It enables hit testing directly regardless of policy and renames the `hitTestOnly` policy to `doNotBlockGesture` for clarity.
+
+# Remove Material library dependencies from several widget tests
+
+**Link**: [flutter#183309](https://github.com/flutter/flutter/pull/183309)
+
+**Summary**: This pull request refactors several test files (including `absorb_pointer_test`, `container_test`, and `page_view_test`) to remove imports and dependencies on the Material library. This involves replacing Material widgets and constants with design-agnostic alternatives to better isolate widget-level testing.
+
+# [Web][Desktop] Fix SelectableText word selection on right-click
 
 **Link**: [flutter#183110](https://github.com/flutter/flutter/pull/183110)
 
-**Summary**: On macOS and web, right-clicking on `SelectableText` incorrectly selected the word at the click position. Since `SelectableText` is a read-only widget, selection should only occur through deliberate gestures. The fix overrides `onSecondaryTap` to skip word selection, ensuring the context menu is shown without modifying the existing selection state.
-
-
-# Replace BorderRadius.circular with const BorderRadius.all and update documentation
-
-**Link**: [flutter#183074](https://github.com/flutter/flutter/pull/183074)
-
-**Summary**: This PR replaces usages of `BorderRadius.circular` with `const BorderRadius.all(Radius.circular(...))` across the framework. This change promotes the use of compile-time constants for border radii, improving performance. All code examples in the documentation were also updated to reflect this recommended style.
-
-
-# Add code-point mode for TextField maxLength counting
-
-**Link**: [flutter#182920](https://github.com/flutter/flutter/pull/182920)
-
-**Summary**: Introduces `MaxLengthCountType` to `TextField`, allowing developers to choose between counting characters (grapheme clusters) or Unicode code points for `maxLength` enforcement. This helps apps align client-side validation with backend rules that use code point counting. The change also updates `LengthLimitingTextInputFormatter` to handle truncation and counter display consistently under the selected mode.
-
+**Summary**: This pull request addresses an issue where right-clicking `SelectableText` on macOS and web would incorrectly select the word at the click position. The update ensures that word selection matches native behavior (selecting the word on macOS/iOS but not on other platforms) and fixes a web-specific issue where the engine incorrectly sent word-selection ranges.
 
 # Add await or ignore lint to invokeMethod callsites
 
 **Link**: [flutter#182870](https://github.com/flutter/flutter/pull/182870)
 
-**Summary**: Addresses `unawaited_futures` lint warnings at `MethodChannel.invokeMethod` call sites across the framework. It adds `await` where appropriate or `// ignore: unawaited_futures` for intentional fire-and-forget calls to avoid breaking public API signatures. It also corrects several tests where futures were incorrectly awaited before checking for expected exceptions.
-
+**Summary**: This pull request adds `await` or `// ignore: unawaited_futures` to various `invokeMethod` calls throughout the framework to satisfy lint requirements. It also involves refactoring some methods to be asynchronous or handling errors via `.catchError` to ensure robust platform communication.
 
 # Respect per-field autovalidateMode priority in forms
 
 **Link**: [flutter#182752](https://github.com/flutter/flutter/pull/182752)
 
-**Summary**: Implements hierarchical validation logic where `FormField.autovalidateMode` now takes precedence over the parent `Form` settings. If the field-level mode is unspecified, it inherits from the form; otherwise, it defaults to disabled. This allows granular control over validation behavior for individual fields within a single form.
+**Summary**: This pull request implements hierarchical validation logic where `FormField.autovalidateMode` takes precedence over the parent `Form` settings. It also fixes a bug where `AutovalidateMode.onUserInteraction` would trigger validation without actual user interaction.
 
+# [macOS] Implement popup windows support
 
-# [iOS] Enable inline text prediction support
+**Link**: [flutter#182371](https://github.com/flutter/flutter/pull/182371)
 
-**Link**: [flutter#182728](https://github.com/flutter/flutter/pull/182728)
+**Summary**: This pull request introduces support for popup windows on macOS. It includes a new `PopupWindowController` for managing these windows, handles positioning relative to an anchor element, and ensures the popup tracks the anchor even during window resizing.
 
-**Summary**: Adds support for iOS 17+ inline predictive text (the gray suggestions appearing after the cursor). It introduces an `enableInlinePrediction` parameter to toggle the feature and a `composingStyle` parameter to `EditableText` for styling the suggestion text. The engine implementation was updated to handle the native `UITextInlinePredictionType` and marked text protocols.
-
-
-# Remove Material dependencies from various widget and sliver tests
-
-**Link**: [flutter#182702](https://github.com/flutter/flutter/pull/182702)
-
-**Summary**: Refactors several test files, including `widget_inspector_test` and `scrollable_fling_test`, to remove dependencies on the Material library. Material-specific widgets are replaced with basic widgets or custom test implementations to ensure that framework tests only depend on the specific libraries they are intended to exercise.
-
-
-# Unify text direction handling in InputDecorator and text fields
-
-**Link**: [flutter#182477](https://github.com/flutter/flutter/pull/182477)
-
-**Summary**: Adds a `textDirection` property to `InputDecoration` and aligns its behavior with `TextField` and `TextFormField`. This ensures that `labelText` and `hintText` are correctly resolved, particularly in RTL contexts, without requiring redundant configuration across the input widgets and their decorations.
-
-
-# [Web] Fix autofill for Safari on iOS 26
+# [Web] Fix autofill in iOS 26 Safari
 
 **Link**: [flutter#182024](https://github.com/flutter/flutter/pull/182024)
 
-**Summary**: Fixes Safari autofill issues on iOS 26 by reusing existing autofill forms/fields instead of recreating them. It also introduces an `onFocusReceived` notification to re-establish text input connections when Safari briefly blurs and refocuses a field during the autofill process, ensuring the framework remains in sync with the browser.
+**Summary**: This pull request fixes autofill issues in Safari on iOS 26 by reusing existing autofill forms instead of recreating them on every connection. It also introduces an `onFocusReceived` notification to re-establish text input connections when a field receives focus from the browser, accounting for iOS 26's new blur-then-focus behavior.
 
+# Fix text selection handle directionality in mixed-directionality text
 
-# Remove Material dependency from semantics_debugger_test
+**Link**: [flutter#179928](https://github.com/flutter/flutter/pull/179928)
 
-**Link**: [flutter#181722](https://github.com/flutter/flutter/pull/181722)
-
-**Summary**: Refactors `semantics_debugger_test.dart` to eliminate its dependency on Material widgets. Components like `ElevatedButton` and `TextField` are replaced with minimal test widgets (`TestButton`, `TestTextField`) that support the necessary semantic actions. This ensures the test is properly decoupled from the Material library.
-
-
-# Expose computeLineMetrics on RenderParagraph
-
-**Link**: [flutter#181240](https://github.com/flutter/flutter/pull/181240)
-
-**Summary**: Exposes `TextPainter.computeLineMetrics()` through a new forwarding method on `RenderParagraph`. This allows callers with access to the render object to retrieve detailed line metrics without needing to duplicate layout logic or access internal state, following the pattern of existing query methods.
-
-
-# [iOS] Add Translate action to text selection context menu
-
-**Link**: [flutter#180021](https://github.com/flutter/flutter/pull/180021)
-
-**Summary**: Adds a "Translate" action to the iOS text selection context menu using the SwiftUI translation API introduced in WWDC 2024. This allows users to translate selected text using the system's native interface. The implementation includes a toggle to enable/disable the feature and handles the presentation of the system translation view.
+**Summary**: This pull request fixes an issue where selection handles would point the wrong way when selecting text with a different directionality than the app's ambient direction (e.g., LTR text in an RTL app). The logic was updated to determine handle types based on their visual horizontal position rather than purely on the logical selection range.
 
 **Screenshot or video**:
 
-https://github.com/user-attachments/assets/8c508f93-2341-498a-b494-c83fafa878f4
+https://github.com/user-attachments/assets/7de61b60-c1dd-44bb-a5c8-34ff5d451350
 
-https://github.com/user-attachments/assets/61025f9c-f937-4043-bee5-ee31761cf5c0
+# [macOS] Run tests using Xcode 26 and iOS 26 simulator
 
-https://github.com/user-attachments/assets/3a7e851f-c892-4b9f-b77d-e09588dec63f
+**Link**: [flutter#179810](https://github.com/flutter/flutter/pull/179810)
 
+**Summary**: This pull request updates the CI configuration to run macOS tests using Xcode 26 and the iOS 26 simulator. This ensures compatibility with the latest Apple platform versions.
+
+# [Android] Fix selection handle alignment and implement auto-dismissal
+
+**Link**: [flutter#178551](https://github.com/flutter/flutter/pull/178551)
+
+**Summary**: This pull request fixes minor misalignments in the text selection handles and ensures that `EditableText` rebuilds its selection overlay when `cursorWidth` is updated. Additionally, it implements native Android behavior where selection handles automatically dismiss after 4 seconds of inactivity when the selection is collapsed.
+
+**Screenshot or video**:
+
+https://github.com/user-attachments/assets/99d69ea0-9559-4b79-8402-aa7657dc47b9
+
+https://github.com/user-attachments/assets/d89d6a99-f026-4e59-bb17-ad8950aea6f0
 
 # Use glyph boundaries for horizontal character traversal
 
 **Link**: [flutter#178258](https://github.com/flutter/flutter/pull/178258)
 
-**Summary**: Implements horizontal caret traversal (arrow keys) using actual glyph information from text layout instead of estimating boundaries from the underlying text. This fix ensures correct caret movement through RTL text and complex scripts (like Indic) where text shaping affects visual character positioning.
+**Summary**: This pull request implements horizontal character traversal using actual glyph information from the text layout instead of guessing boundaries. This ensures the caret correctly moves through RTL text and positions itself accurately between characters in complex scripts (like Indic) that involve text shaping.
 
 **Screenshot or video**:
 
@@ -115,9 +134,8 @@ https://github.com/user-attachments/assets/57296793-6fcd-4ae8-a835-35eb95572c62
 
 https://github.com/user-attachments/assets/b00a55d4-ca21-4ab8-8681-5c095288223d
 
-
-# Expose buttons accessor on tap detail events
+# Expose buttons accessor on tap and drag details events
 
 **Link**: [flutter#176968](https://github.com/flutter/flutter/pull/176968)
 
-**Summary**: Adds a `buttons` property to `TapDownDetails` and `TapUpDetails` to identify which mouse buttons were used during a tap gesture. The PR also generalizes this by adding `buttons` and `kind` (device type) to various other gesture detail classes, providing better support for multi-button mouse interactions on desktop and web.
+**Summary**: This pull request exposes the `buttons` bitfield and `kind` of device on several details classes, including `TapDownDetails`, `TapUpDetails`, and `DragStartDetails`. This allows developers to determine which mouse buttons were pressed during a gesture and ensures consistency across various gesture recognizers.
