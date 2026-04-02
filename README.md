@@ -2,7 +2,7 @@
 
 ### Accessibility (`team-accessibility`)
 
-* [Incoming issue list](output/Accesibility%20issues.md)
+* [Incoming issue list](output/Accessibility%20issues.md)
 
 ### Design Languages team (`team-design`)
 
