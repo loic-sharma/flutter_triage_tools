@@ -1,5 +1,19 @@
 # Flutter triage tools
 
+### Accessibility (`team-accessibility`)
+
+* [Incoming issue list](output/Accesibility%20issues.md)
+
+### Design Languages team (`team-design`)
+
+* [Incoming issue list](output/Design%20issues.md)
+* [Pull requests](output/Design%20pulls.md)
+
+### Text input (`team-text-input`)
+
+* [Incoming issue list](output/Text%20input%20issues.md)
+* [Pull requests](output/Text%20input%20pulls.md)
+
 ## Instructions
 
 1. Install [Gemini CLI][Gemini CLI].
